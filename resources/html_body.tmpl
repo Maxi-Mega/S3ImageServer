@@ -1,0 +1,169 @@
+{{define "html_body"}}
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <title>S3 Image Server [{{.BucketName}}]</title>
+        <meta charset="utf-8">
+        <style>
+            body {
+                margin: 10px 10px 0;
+                padding-top: 15px;
+                background-color: #1c1c1c;
+                /*display: flex;
+                justify-content: space-between;
+                align-items: center;
+                flex-flow: row wrap;*/
+            }
+
+            header {
+                width: 100%;
+                height: 20px;
+                display: flex;
+                position: fixed;
+                left: 0;
+                top: 0;
+                padding: 10px;
+                background-color: #393939;
+                justify-content: space-between;
+                z-index: 10;
+            }
+
+            .filters {
+                display: flex;
+            }
+
+            .filters label {
+                margin-left: 40px;
+                color: #e4d3c1;
+                font-size: 14px;
+            }
+
+            .filters input#search {
+                opacity: 0.5;
+            }
+
+            header #version {
+                color: #e4d3c1;
+                font-size: 12px;
+                align-self: center;
+                transform: translateX(-25%);
+            }
+
+            main {
+                /*display: flex;
+                justify-content: space-between;
+                align-items: center;
+                flex-flow: row wrap;*/
+                column-count: 3;
+            }
+
+            .container {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+            }
+
+            .img-container {
+                /*width: 33%;
+                max-width: 33%;*/
+                height: auto;
+                margin-top: 20px;
+                margin-bottom: 20px;
+                display: grid;
+                justify-content: center;
+                text-align: center;
+                /*transition: all ease-in-out 1s;*/
+            }
+
+            .filter-hidden {
+                display: none;
+            }
+
+            .search-hidden {
+                display: none;
+            }
+
+            img:not(#modal-img) {
+                max-width: 32vw;
+                cursor: pointer;
+                /*animation: fadein ease-out 1s;*/
+            }
+
+            .img-title {
+                margin-top: 5px;
+                color: #e4d3c1;
+                font-family: Arial, sans-serif;
+                font-size: 13px;
+                text-decoration: none;
+            }
+
+            .img-title:hover {
+                text-decoration: underline;
+            }
+
+            #modal {
+                z-index: 500;
+                display: none;
+                position: fixed;
+                background-color: rgba(0, 0, 0, 0.5);
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+            }
+
+            #modal-img {
+                z-index: 1000;
+                position: fixed;
+                width: auto;
+                max-height: 99vh;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                animation: none;
+            }
+
+            #modal-img.show {
+                /*animation: fadein ease-out 1s;
+                animation-delay: -0.5s;*/
+            }
+
+            @keyframes fadein {
+                from {
+                    opacity: 0;
+                }
+                to {
+                    opacity: 1;
+                }
+            }
+        </style>
+    </head>
+    <body>
+    <header>
+        <div class="filters">
+            {{range .ImageTypes}}
+                <label>
+                    <input type="checkbox">
+                    {{.}}
+                </label>
+            {{end}}
+            <label style="padding-left: 50px">
+                Search:
+                <input id="search" type="text" title="Included in image name, case insensitive">
+            </label>
+        </div>
+        <div id="version">Version: {{.Version}}</div>
+    </header>
+    <div class="container">
+        {{range .Previews}}
+            <div class="img-container">
+                <img src="/image/{{.}}" alt="{{.}}"/>
+                <br/>
+                <a class="img-title" href="/image/{{.}}" target="_blank"
+                   title="Click to open the image in a new tab">{{.}}</a>
+            </div>
+        {{end}}
+    </div>
+    <div id="modal" title="Click to close">
+        <img id="modal-img" src="" alt=""/>
+    </div>
+{{end}}

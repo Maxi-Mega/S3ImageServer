@@ -1,0 +1,21 @@
+s3:
+  endPoint: "192.168.0.27:9000"
+  bucketName: "s950-prod"
+  keyPrefix: "PREVIEW"
+  accessId: "admin"
+  accessSecret: "password"
+  useSSL: false                 # Not tested
+
+previewFilename: "preview.jpg"
+imageTypes:
+  - "PRIMARY"
+  - "PRIMARY_PANSHARP"
+  - "PROJECTED"
+
+debug: true
+httpTrace: false
+cacheDir: ""        # Nothing = default
+retentionPeriod: 9999h
+pollingMode: true
+pollingPeriod: 10s
+webServerPort: 8081

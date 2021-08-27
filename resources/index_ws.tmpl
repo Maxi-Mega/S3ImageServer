@@ -1,0 +1,139 @@
+{{template "html_body" .}}
+<script>
+    const images = {{.Previews}} || [];
+    const previewFilename = {{.PreviewFilename}} || "";
+    const prefixName = {{.PrefixName}} || "";
+
+    const modal = document.getElementById("modal");
+    const modalImg = document.getElementById("modal-img");
+    const inputs = {};
+    const searchInput = document.getElementById("search");
+
+    const formatTitle = (title) => title.substring(prefixName.length + 1).replaceAll("@", "/").replace("/" + previewFilename, "").replace("/", "\n");
+
+    function modalize(img) {
+        modalImg.classList.add("show");
+        modalImg.src = img.src;
+        modalImg.alt = img.alt;
+        modal.style.display = "block";
+    }
+
+    function addNewImg(img, addToList = true) {
+        const newImg = document.createElement("img");
+        newImg.src = "/image/" + img;
+        newImg.alt = img;
+        newImg.addEventListener("click", () => modalize(newImg));
+        const newA = document.createElement("a");
+        newA.classList.add("img-title");
+        newA.href = "/image/" + img;
+        newA.target = "_blank";
+        newA.title = "Click to open the image in a new tab";
+        newA.innerText = formatTitle(img);
+        const newDiv = document.createElement("div");
+        newDiv.classList.add("img-container");
+        newDiv.appendChild(newImg);
+        newDiv.appendChild(newA);
+        const imgType = img.substring(prefixName.length + 1).split("@")[0];
+        newDiv.setAttribute("img-type", imgType);
+        if (inputs.hasOwnProperty(imgType)) {
+            if (!inputs[imgType].checked) {
+                newDiv.classList.add("filter-hidden");
+            }
+        }
+        if (searchInput.value !== "") {
+            if (!newA.innerText.toLowerCase().includes(searchInput.value.toLowerCase())) {
+                newDiv.classList.add("search-hidden");
+            }
+        }
+
+        newImg.onload = () => {
+            document.body.appendChild(newDiv);
+            if (addToList) {
+                images.push(img);
+            }
+        };
+        newImg.onerror = () => {
+            console.warn("Image", img, "not found");
+        };
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        document.querySelectorAll(".img-title").forEach(p => {
+            p.innerText = formatTitle(p.innerText);
+            p.parentElement.setAttribute("img-type", p.innerText.split("\n")[0]);
+        });
+        document.querySelectorAll("img").forEach(img => {
+            img.addEventListener("click", () => modalize(img));
+        });
+        modal.addEventListener("click", () => {
+            modalImg.classList.remove("show");
+            modal.style.display = "";
+        });
+
+        document.querySelectorAll(".filters input[type=checkbox]").forEach(inpt => {
+            inpt.checked = true;
+            const value = inpt.parentElement.innerText.trim();
+            inputs[value] = inpt;
+            inpt.addEventListener("input", () => {
+                if (inpt.checked) {
+                    document.querySelectorAll(`div[img-type="${value}"]`).forEach(container => container.classList.remove("filter-hidden"));
+                } else {
+                    document.querySelectorAll(`div[img-type="${value}"]`).forEach(container => container.classList.add("filter-hidden"));
+                }
+            });
+        });
+
+        searchInput.value = "";
+        searchInput.addEventListener("input", () => {
+            const value = searchInput.value.toLowerCase();
+            if (value === "") {
+                document.querySelectorAll("div.search-hidden").forEach(container => container.classList.remove("search-hidden"));
+            } else {
+                document.querySelectorAll("div > a.img-title").forEach(a => {
+                    if (a.innerText.toLowerCase().includes(value)) {
+                        a.parentElement.classList.remove("search-hidden");
+                    } else {
+                        a.parentElement.classList.add("search-hidden");
+                    }
+                });
+            }
+        });
+
+        if (window["WebSocket"]) {
+            const conn = new WebSocket("ws://" + document.location.host + "/ws");
+            conn.onclose = function (evt) {
+                console.warn("WebSocket connection closed");
+            };
+            conn.onmessage = function (evt) {
+                const msg = evt.data
+                const type = msg.split(":")[0];
+                const img = msg.substring(type.length + 1);
+                console.info("Event:", type, "=>", img);
+                const alreadyLoaded = images.includes(img);
+                switch (type) {
+                    case "ADD":
+                        if (alreadyLoaded) {
+                            document.querySelector(`img[src="/image/${img}"]`).src = `/image/${img}?time=${Date.now()}`;
+                        } else {
+                            addNewImg(img);
+                        }
+                        break;
+                    case "REMOVE":
+                        if (alreadyLoaded) {
+                            document.body.removeChild(document.querySelector(`img[src="/image/${img}"]`).parentElement);
+                            // remove from images list
+                            images.splice(images.indexOf(img), 1);
+                        }
+                        break;
+                    default:
+                        console.warn("Unknown event type:", type);
+                        break;
+                }
+            };
+        } else {
+            console.error("Your browser does not support WebSockets");
+        }
+    });
+</script>
+</body>
+</html>

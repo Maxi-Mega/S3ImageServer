@@ -1,0 +1,152 @@
+{{template "html_body" .}}
+<script>
+    const images = {{.Previews}} || [];
+    const previewFilename = {{.PreviewFilename}} || "";
+    const prefixName = {{.PrefixName}} || "";
+    const retentionPeriod = {{.RetentionPeriod}}; // in seconds
+    const refreshPeriod = {{.PollingPeriod}}; // in seconds
+
+    const modal = document.getElementById("modal");
+    const modalImg = document.getElementById("modal-img");
+    const inputs = {};
+    const searchInput = document.getElementById("search");
+
+    const formatTitle = (title) => title.substring(prefixName.length + 1).replaceAll("@", "/").replace("/" + previewFilename, "").replace("/", "\n");
+
+    function modalize(img) {
+        console.info("Modalizing", img.src);
+        modalImg.classList.add("show");
+        modalImg.src = img.src;
+        modalImg.alt = img.alt;
+        modal.style.display = "block";
+    }
+
+    function addNewImg(img, addToList = true) {
+        const newImg = document.createElement("img");
+        newImg.src = "/image/" + img;
+        newImg.alt = img;
+        newImg.addEventListener("click", () => modalize(newImg));
+        const newA = document.createElement("a");
+        newA.classList.add("img-title");
+        newA.href = "/image/" + img;
+        newA.target = "_blank";
+        newA.title = "Click to open the image in a new tab";
+        newA.innerText = formatTitle(img);
+        const newDiv = document.createElement("div");
+        newDiv.classList.add("img-container");
+        newDiv.appendChild(newImg);
+        newDiv.appendChild(newA);
+        const imgType = img.substring(prefixName.length + 1).split("@")[0];
+        newDiv.setAttribute("img-type", imgType);
+        if (inputs.hasOwnProperty(imgType)) {
+            if (!inputs[imgType].checked) {
+                newDiv.classList.add("filter-hidden");
+            }
+        }
+        if (searchInput.value !== "") {
+            if (!newA.innerText.toLowerCase().includes(searchInput.value.toLowerCase())) {
+                newDiv.classList.add("search-hidden");
+            }
+        }
+
+        newImg.onload = () => {
+            // document.body.appendChild(newDiv);
+            const container = document.querySelector("div.container");
+            container.insertBefore(newDiv, container.firstChild);
+            if (addToList) {
+                images.push(img);
+            }
+            setTimeout(() => {
+                document.body.removeChild(newDiv);
+                // remove from images list
+                images.splice(images.indexOf(img), 1);
+            }, retentionPeriod * 1000);
+        };
+        newImg.onerror = () => {
+            console.warn("Image", img, "not found");
+        };
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        document.querySelectorAll(".img-title").forEach(p => {
+            p.innerText = formatTitle(p.innerText);
+            p.parentElement.setAttribute("img-type", p.innerText.split("\n")[0]);
+        });
+        document.querySelectorAll("img:not(#modal-img)").forEach(img => {
+            img.addEventListener("click", () => modalize(img));
+            setTimeout(() => {
+                document.body.removeChild(img.parentElement);
+                // remove from images list
+                images.splice(images.indexOf(img.alt), 1);
+            }, retentionPeriod * 1000);
+        });
+        modal.addEventListener("click", () => {
+            modalImg.classList.remove("show");
+            modal.style.display = "";
+        });
+
+        document.querySelectorAll(".filters input[type=checkbox]").forEach(inpt => {
+            inpt.checked = true;
+            const value = inpt.parentElement.innerText.trim();
+            inputs[value] = inpt;
+            inpt.addEventListener("input", () => {
+                if (inpt.checked) {
+                    document.querySelectorAll(`div[img-type="${value}"]`).forEach(container => container.classList.remove("filter-hidden"));
+                } else {
+                    document.querySelectorAll(`div[img-type="${value}"]`).forEach(container => container.classList.add("filter-hidden"));
+                }
+            });
+        });
+
+        searchInput.value = "";
+        searchInput.addEventListener("input", () => {
+            const value = searchInput.value.toLowerCase();
+            if (value === "") {
+                document.querySelectorAll("div.search-hidden").forEach(container => container.classList.remove("search-hidden"));
+            } else {
+                document.querySelectorAll("div > a.img-title").forEach(a => {
+                    if (a.innerText.toLowerCase().includes(value)) {
+                        a.parentElement.classList.remove("search-hidden");
+                    } else {
+                        a.parentElement.classList.add("search-hidden");
+                    }
+                });
+            }
+        });
+
+        setInterval(() => {
+            return new Promise((success, reject) => {
+                let request = new XMLHttpRequest();
+                request.onload = function () {
+                    if (this.status === 200 && this.responseText != null) {
+                        let jsonResult = JSON.parse(request.responseText);
+                        success(jsonResult);
+                    } else {
+                        if (this.responseText == null) {
+                            reject(this.status + " - " + this.error);
+                        } else {
+                            reject(this.status + " - " + this.error + " " + JSON.parse(request.responseText).message);
+                        }
+                    }
+                }
+                request.onerror = function (ev) {
+                    reject(ev);
+                }
+                request.open("GET", location.origin + "/images");
+                request.send();
+            }).then(result => {
+                const lastestImages = result.data;
+                lastestImages.forEach(img => {
+                    if (!images.includes(img)) {
+                        console.info("Found new image:", img);
+                        addNewImg(img);
+                    }
+                });
+            }).catch(reason => {
+                console.warn(reason);
+            });
+        }, refreshPeriod * 1000);
+    });
+</script>
+</body>
+</html>
