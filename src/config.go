@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-//go:embed example_config.yml
+//go:embed resources/example_config.yml
 var defaultConfigFile string
 
 // S3Config is the directly related part of the global config
@@ -36,7 +36,7 @@ type Config struct {
 	CacheDir        string        `yaml:"cacheDir"`
 	RetentionPeriod time.Duration `yaml:"retentionPeriod"`
 	PollingMode     bool          `yaml:"pollingMode"`
-	PollingPeriod time.Duration `yaml:"pollingPeriod"`
+	PollingPeriod   time.Duration `yaml:"pollingPeriod"`
 	WebServerPort   uint16        `yaml:"webServerPort"`
 }
 

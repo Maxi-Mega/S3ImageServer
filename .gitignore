@@ -1,5 +1,6 @@
-# Shell script
+# Local files
 build_compress_move.sh
+local_config.yml
 
 ### JetBrains template
 # Covers JetBrains IDEs: IntelliJ, RubyMine, PhpStorm, AppCode, PyCharm, CLion, Android Studio, WebStorm and Rider
