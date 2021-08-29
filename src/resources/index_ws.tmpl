@@ -8,6 +8,7 @@
     const modalImg = document.getElementById("modal-img");
     const inputs = {};
     const searchInput = document.getElementById("search");
+    const container = document.querySelector("div.container");
 
     const formatTitle = (title) => title.substring(prefixName.length + 1).replaceAll("@", "/").replace("/" + previewFilename, "").replace("/", "\n");
 
@@ -47,7 +48,8 @@
         }
 
         newImg.onload = () => {
-            document.body.appendChild(newDiv);
+            // document.body.appendChild(newDiv);
+            container.insertBefore(newDiv, container.firstChild);
             if (addToList) {
                 images.push(img);
             }

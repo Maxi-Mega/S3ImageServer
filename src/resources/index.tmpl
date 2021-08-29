@@ -1,6 +1,6 @@
 {{template "html_body" .}}
 <script>
-    const images = {{.Previews}} || [];
+    let images = {{.Previews}} || [];
     const previewFilename = {{.PreviewFilename}} || "";
     const prefixName = {{.PrefixName}} || "";
     const retentionPeriod = {{.RetentionPeriod}}; // in seconds
@@ -10,6 +10,7 @@
     const modalImg = document.getElementById("modal-img");
     const inputs = {};
     const searchInput = document.getElementById("search");
+    const container = document.querySelector("div.container");
 
     const formatTitle = (title) => title.substring(prefixName.length + 1).replaceAll("@", "/").replace("/" + previewFilename, "").replace("/", "\n");
 
@@ -23,7 +24,7 @@
 
     function addNewImg(img, addToList = true) {
         const newImg = document.createElement("img");
-        newImg.src = "/image/" + img;
+        newImg.src = "/image/" + img + "?time=" + new Date().getTime();
         newImg.alt = img;
         newImg.addEventListener("click", () => modalize(newImg));
         const newA = document.createElement("a");
@@ -49,22 +50,33 @@
             }
         }
 
-        newImg.onload = () => {
-            // document.body.appendChild(newDiv);
-            const container = document.querySelector("div.container");
-            container.insertBefore(newDiv, container.firstChild);
-            if (addToList) {
-                images.push(img);
-            }
-            setTimeout(() => {
-                document.body.removeChild(newDiv);
-                // remove from images list
-                images.splice(images.indexOf(img), 1);
-            }, retentionPeriod * 1000);
-        };
+        // newImg.onload = () => {
+        // document.body.appendChild(newDiv);
+        container.insertBefore(newDiv, container.firstChild);
+        if (addToList) {
+            images.push(img);
+        }
+        setTimeout(() => {
+            document.body.removeChild(newDiv);
+            // remove from images list
+            images.splice(images.indexOf(img), 1);
+        }, retentionPeriod * 1000);
+        // };
         newImg.onerror = () => {
             console.warn("Image", img, "not found");
         };
+    }
+
+    function arrArraysEquals(arr1, arr2) {
+        if (arr1.length !== arr2.length) {
+            return false;
+        }
+        for (let i = 0; i < arr1.length; i++) {
+            if (arr1[i] !== arr2[i]) {
+                return false;
+            }
+        }
+        return true;
     }
 
     document.addEventListener("DOMContentLoaded", () => {
@@ -115,7 +127,7 @@
         });
 
         setInterval(() => {
-            return new Promise((success, reject) => {
+            return new Promise((success, reject) => { // TODO: fetch
                 let request = new XMLHttpRequest();
                 request.onload = function () {
                     if (this.status === 200 && this.responseText != null) {
@@ -136,12 +148,21 @@
                 request.send();
             }).then(result => {
                 const lastestImages = result.data;
-                lastestImages.forEach(img => {
+                const sameImages = arrArraysEquals(lastestImages, images);
+                if (!sameImages) {
+                    container.querySelectorAll("div.img-container").forEach(e => container.removeChild(e));
+                    images = lastestImages;
+                    for (let i = images.length - 1; i >= 0; i--) {
+                        console.info("Found new image:", images[i]);
+                        addNewImg(images[i], false);
+                    }
+                }
+                /*lastestImages.forEach(img => {
                     if (!images.includes(img)) {
                         console.info("Found new image:", img);
                         addNewImg(img);
                     }
-                });
+                });*/
             }).catch(reason => {
                 console.warn(reason);
             });
