@@ -80,7 +80,7 @@
             }
 
             img:not(#modal-img) {
-                max-width: 20vw;
+                max-width: 22vw;
                 cursor: pointer;
                 /*animation: fadein ease-out 1s;*/
             }
@@ -89,7 +89,7 @@
                 margin-top: 5px;
                 color: #e4d3c1;
                 font-family: Arial, sans-serif;
-                font-size: 13px;
+                font-size: 10px;
                 text-decoration: none;
             }
 
@@ -166,6 +166,7 @@
     <script>
         document.addEventListener("DOMContentLoaded", () => {
             const initialWindowHeight = window.innerHeight;
+
             const initialHeaderHeight = 20;
             const initialHeaderPadding = 10;
             const initialLabelSize = 14;
@@ -175,13 +176,13 @@
             const initialTextInputSize = 13;
             const initialVersionSize = 12;
             const header = document.querySelector("header");
-            window.visualViewport.onresize = (evt) => {
+
+            window.visualViewport.onresize = () => {
                 const height = window.innerHeight;
                 const getRatio = initialSize => initialSize * height / initialWindowHeight;
 
                 // Header
                 const calculatedHeight = getRatio(initialHeaderHeight);
-                console.log(height, "=>", calculatedHeight);
                 header.style.height = calculatedHeight + "px";
                 const calculatedPadding = getRatio(initialHeaderPadding);
                 header.style.padding = calculatedPadding + "px 0";
@@ -211,6 +212,8 @@
                 // Version
                 const calculatedVersion = getRatio(initialVersionSize);
                 header.querySelector("#version").style.fontSize = calculatedVersion + "px";
+
+
             }
         });
     </script>
