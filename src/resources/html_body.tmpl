@@ -80,7 +80,7 @@
             }
 
             img:not(#modal-img) {
-                max-width: 32vw;
+                max-width: 20vw;
                 cursor: pointer;
                 /*animation: fadein ease-out 1s;*/
             }
@@ -163,4 +163,55 @@
     <div id="modal" title="Click to close">
         <img id="modal-img" src="" alt=""/>
     </div>
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const initialWindowHeight = window.innerHeight;
+            const initialHeaderHeight = 20;
+            const initialHeaderPadding = 10;
+            const initialLabelSize = 14;
+            const initialLabelMargin = 40;
+            const initialCheckboxSize = 100;
+            const initialCheckboxMargin = 3;
+            const initialTextInputSize = 13;
+            const initialVersionSize = 12;
+            const header = document.querySelector("header");
+            window.visualViewport.onresize = (evt) => {
+                const height = window.innerHeight;
+                const getRatio = initialSize => initialSize * height / initialWindowHeight;
+
+                // Header
+                const calculatedHeight = getRatio(initialHeaderHeight);
+                console.log(height, "=>", calculatedHeight);
+                header.style.height = calculatedHeight + "px";
+                const calculatedPadding = getRatio(initialHeaderPadding);
+                header.style.padding = calculatedPadding + "px 0";
+
+                // Labels
+                const calculatedLabel = getRatio(initialLabelSize);
+                const calculatedLabelMargin = getRatio(initialLabelMargin);
+                header.querySelectorAll(".filters label").forEach(e => {
+                    e.style.fontSize = calculatedLabel + "px";
+                    e.style.marginLeft = calculatedLabelMargin + "px";
+                });
+
+                // Checkboxes
+                const calculatedCheckbox = getRatio(initialCheckboxSize);
+                const calculatedCheckboxMargin = getRatio(initialCheckboxMargin);
+                header.querySelectorAll(".filters input[type='checkbox']").forEach(e => {
+                    e.style.transform = `scale(${calculatedCheckbox}%`;
+                    e.style.margin = calculatedCheckboxMargin + "px";
+                });
+
+                // Text input
+                const calculatedTextInput = getRatio(initialTextInputSize);
+                header.querySelectorAll(".filters input[type='text']").forEach(e => {
+                    e.style.fontSize = calculatedTextInput + "px";
+                });
+
+                // Version
+                const calculatedVersion = getRatio(initialVersionSize);
+                header.querySelector("#version").style.fontSize = calculatedVersion + "px";
+            }
+        });
+    </script>
 {{end}}
