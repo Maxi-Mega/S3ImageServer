@@ -48,8 +48,30 @@ func existsInCache(imgName string, obj minio.ObjectInfo) bool {
 	return false
 }
 
+func listFullProductImages(minioClient *minio.Client, dirs []string) {
+	log(fmt.Sprintf("Looking for full product images in bucket [%s] ...", config.S3.BucketName))
+	fullProductLinksCache = map[string][]string{}
+	for _, dir := range dirs {
+		fullProductLinksCache[dir] = []string{}
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		for obj := range minioClient.ListObjects(ctx, config.S3.BucketName, minio.ListObjectsOptions{Prefix: dir}) {
+			if obj.Err != nil {
+				continue
+			}
+
+			if !strings.HasSuffix(obj.Key, config.FullProductExtension) {
+				continue
+			}
+
+			fullProductLinksCache[dir] = append(fullProductLinksCache[dir], config.FullProductProtocol+"://"+config.S3.BucketName+"/"+obj.Key)
+		}
+	}
+}
+
 func extractFilesFromBucket(minioClient *minio.Client, eventChan chan event) error {
-	log(fmt.Sprintf("Looking for images in bucket [%s] ...", config.S3.BucketName))
+	// log(fmt.Sprintf("Looking for images in bucket [%s] ...", config.S3.BucketName))
+	previewBaseDirs := []string{}
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
 	for obj := range minioClient.ListObjects(ctx, config.S3.BucketName, minio.ListObjectsOptions{Prefix: config.S3.KeyPrefix, Recursive: true}) {
@@ -66,6 +88,8 @@ func extractFilesFromBucket(minioClient *minio.Client, eventChan chan event) err
 			continue
 		}
 
+		previewBaseDirs = append(previewBaseDirs, strings.TrimSuffix(obj.Key, config.PreviewFilename))
+
 		formattedName := formatImgName(obj.Key)
 
 		alreadyInCache := existsInCache(formattedName, obj)
@@ -79,6 +103,8 @@ func extractFilesFromBucket(minioClient *minio.Client, eventChan chan event) err
 		}
 		imagesCache[formattedName] = obj.LastModified
 	}
+
+	listFullProductImages(minioClient, previewBaseDirs)
 
 	return nil
 }

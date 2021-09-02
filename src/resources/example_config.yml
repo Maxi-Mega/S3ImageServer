@@ -6,7 +6,10 @@ s3:
   accessSecret: "password"
   useSSL: false                 # Not tested
 
+windowTitle: "S3 Image Viewer"
 previewFilename: "preview.jpg"
+fullProductExtension: "tif"
+fullProductProtocol: "protocol"
 imageTypes:
   - "TYPE1"
   - "TYPE2"

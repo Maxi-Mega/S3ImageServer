@@ -10,9 +10,34 @@
     const searchInput = document.getElementById("search");
     const container = document.querySelector("div.container");
 
-    const formatTitle = (title) => title.substring(prefixName.length + 1).replaceAll("@", "/").replace("/" + previewFilename, "").replace("/", "\n");
+    function formatTitle(title) {
+        title = title.substring(prefixName.length + 1).replaceAll("@", "/").replace("/" + previewFilename, "");
+        const imgType = title.substring(0, title.indexOf("/"));
+        const imgName = title.substring(title.lastIndexOf("/") + 1);
+        return imgType + "\n" + imgName;
+    }
 
     function modalize(img) {
+        fetch("links/" + img.alt.replaceAll("@", "/")).then(response => {
+            response.json().then(links => {
+                console.log("Links:", links);
+                while (modalLinks.hasChildNodes()) {
+                    modalLinks.removeChild(modalLinks.firstChild);
+                }
+                for (const link of links.data) {
+                    const li = document.createElement("li");
+                    const a = document.createElement("a");
+                    a.href = link;
+                    a.innerText = link.substring(link.lastIndexOf("/") + 1);
+                    li.appendChild(a);
+                    modalLinks.appendChild(li);
+                }
+            }).catch(reason => {
+                console.warn("Failed to jsonify links:", reason);
+            });
+        }).catch(reason => {
+            console.warn("Failed to get image links:", reason);
+        });
         modalImg.classList.add("show");
         modalImg.src = img.src;
         modalImg.alt = img.alt;
@@ -47,13 +72,14 @@
             }
         }
 
-        newImg.onload = () => {
+       //  newImg.onload = () => {
             // document.body.appendChild(newDiv);
             container.insertBefore(newDiv, container.firstChild);
             if (addToList) {
                 images.push(img);
             }
-        };
+        countImages();
+        // };
         newImg.onerror = () => {
             console.warn("Image", img, "not found");
         };
@@ -82,6 +108,7 @@
                 } else {
                     document.querySelectorAll(`div[img-type="${value}"]`).forEach(container => container.classList.add("filter-hidden"));
                 }
+                countImages();
             });
         });
 
@@ -99,6 +126,7 @@
                     }
                 });
             }
+            countImages();
         });
 
         if (window["WebSocket"]) {
@@ -125,6 +153,7 @@
                             document.body.removeChild(document.querySelector(`img[src="/image/${img}"]`).parentElement);
                             // remove from images list
                             images.splice(images.indexOf(img), 1);
+                            countImages();
                         }
                         break;
                     default:

@@ -10,13 +10,14 @@ import (
 	"time"
 )
 
-const version = "1.3.3"
+const version = "1.4.0"
 
 const defaultTempDirName = "s3_image_server"
 
 var config Config
 
 var imagesCache map[string]time.Time
+var fullProductLinksCache map[string][]string
 
 // --config config.yml
 

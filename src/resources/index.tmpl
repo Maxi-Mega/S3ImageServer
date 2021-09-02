@@ -6,20 +6,45 @@
     const retentionPeriod = {{.RetentionPeriod}}; // in seconds
     const refreshPeriod = {{.PollingPeriod}}; // in seconds
 
-    const modal = document.getElementById("modal");
-    const modalImg = document.getElementById("modal-img");
     const inputs = {};
     const searchInput = document.getElementById("search");
     const container = document.querySelector("div.container");
+    const modal = document.getElementById("modal");
+    const modalImg = document.getElementById("modal-img");
+    const modalLinks = document.getElementById("modal-links");
 
-    const formatTitle = (title) => title.substring(prefixName.length + 1).replaceAll("@", "/").replace("/" + previewFilename, "").replace("/", "\n");
+    function formatTitle(title) {
+        title = title.substring(prefixName.length + 1).replaceAll("@", "/").replace("/" + previewFilename, "");
+        const imgType = title.substring(0, title.indexOf("/"));
+        const imgName = title.substring(title.lastIndexOf("/") + 1);
+        return imgType + "\n" + imgName;
+    }
 
     function modalize(img) {
-        console.info("Modalizing", img.src);
+        fetch("links/" + img.alt.replaceAll("@", "/")).then(response => {
+            response.json().then(links => {
+                console.log("Links:", links);
+                while (modalLinks.hasChildNodes()) {
+                    modalLinks.removeChild(modalLinks.firstChild);
+                }
+                for (const link of links.data) {
+                    const li = document.createElement("li");
+                    const a = document.createElement("a");
+                    a.href = link;
+                    a.innerText = link.substring(link.lastIndexOf("/") + 1);
+                    li.appendChild(a);
+                    modalLinks.appendChild(li);
+                }
+            }).catch(reason => {
+                console.warn("Failed to jsonify links:", reason);
+            });
+        }).catch(reason => {
+            console.warn("Failed to get image links:", reason);
+        });
         modalImg.classList.add("show");
         modalImg.src = img.src;
         modalImg.alt = img.alt;
-        modal.style.display = "block";
+        modal.style.display = "flex";
     }
 
     function addNewImg(img, addToList = true) {
@@ -56,10 +81,12 @@
         if (addToList) {
             images.push(img);
         }
+        countImages();
         setTimeout(() => {
             document.body.removeChild(newDiv);
             // remove from images list
             images.splice(images.indexOf(img), 1);
+            countImages();
         }, retentionPeriod * 1000);
         // };
         newImg.onerror = () => {
@@ -96,6 +123,9 @@
             modalImg.classList.remove("show");
             modal.style.display = "";
         });
+        document.getElementById("modal-content").addEventListener("click", ev => {
+            ev.stopPropagation();
+        });
 
         document.querySelectorAll(".filters input[type=checkbox]").forEach(inpt => {
             inpt.checked = true;
@@ -107,6 +137,7 @@
                 } else {
                     document.querySelectorAll(`div[img-type="${value}"]`).forEach(container => container.classList.add("filter-hidden"));
                 }
+                countImages();
             });
         });
 
@@ -124,6 +155,7 @@
                     }
                 });
             }
+            countImages();
         });
 
         setInterval(() => {

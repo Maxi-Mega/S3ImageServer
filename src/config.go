@@ -28,8 +28,11 @@ type S3Config struct {
 type Config struct {
 	S3 S3Config `yaml:"s3"`
 
-	PreviewFilename string   `yaml:"previewFilename"`
-	ImageTypes      []string `yaml:"imageTypes"`
+	WindowTitle          string   `yaml:"windowTitle"`
+	PreviewFilename      string   `yaml:"previewFilename"`
+	FullProductExtension string   `yaml:"fullProductExtension"`
+	FullProductProtocol  string   `yaml:"fullProductProtocol"`
+	ImageTypes           []string `yaml:"imageTypes"`
 
 	Debug           bool          `yaml:"debug"`
 	HttpTrace       bool          `yaml:"httpTrace"`
@@ -44,6 +47,8 @@ var defaultConfig = Config{
 	S3: S3Config{
 		UseSSL: false,
 	},
+
+	WindowTitle: "S3 Image Viewer",
 
 	Debug:         false,
 	HttpTrace:     false,
@@ -60,10 +65,14 @@ func (config *Config) loadDefaults() {
 		fieldValue := field.Interface()
 		switch fieldName {
 		case "S3":
-			/*s3Config := fieldValue.(S3Config)
-			if s3Config.UseSSL == false {
-				config.S3.UseSSL = defaultConfig.S3.UseSSL
-			}*/
+		/*s3Config := fieldValue.(S3Config)
+		if s3Config.UseSSL == false {
+			config.S3.UseSSL = defaultConfig.S3.UseSSL
+		}*/
+		case "WindowTitle":
+			if fieldValue.(string) == "" {
+				config.WindowTitle = defaultConfig.WindowTitle
+			}
 		case "Debug":
 			/*if fieldValue.(bool) == false {
 				config.Debug = defaultConfig.Debug
@@ -142,7 +151,10 @@ func (config Config) String() string {
 	result := "S3:\n"
 	s3 := config.S3
 	result += fmt.Sprintf("\tendPoint: %s\n\tbucketName: %s\n\tkeyPrefix: %s\n\taccessId: %s\n\taccessSecret: %s\n", s3.EndPoint, s3.BucketName, s3.KeyPrefix, s3.AccessId, s3.AccessSecret)
+	result += "windowTitle: " + config.WindowTitle + "\n"
 	result += "previewFilename: " + config.PreviewFilename + "\n"
+	result += "fullProductExtension: " + config.FullProductExtension + "\n"
+	result += "fullProductProtocol: " + config.FullProductProtocol + "\n"
 	result += "imageTypes: " + strings.Join(config.ImageTypes, ", ") + "\n"
 	result += fmt.Sprintf("debug: %v\ncacheDir: %s\nwebServerPort: %d\n", config.Debug, config.CacheDir, config.WebServerPort)
 	return result

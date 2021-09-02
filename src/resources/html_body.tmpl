@@ -2,7 +2,7 @@
     <!DOCTYPE html>
     <html lang="en">
     <head>
-        <title>S3 Image Server [{{.BucketName}}]</title>
+        <title>{{.WindowTitle}}</title>
         <meta charset="utf-8">
         <style>
             body {
@@ -30,12 +30,19 @@
 
             .filters {
                 display: flex;
+                align-items: center;
             }
 
-            .filters label {
+            header label {
                 margin-left: 40px;
                 color: #e4d3c1;
                 font-size: 14px;
+            }
+
+            header label[for='scaler'] {
+                display: flex;
+                align-items: center;
+                margin: 0;
             }
 
             .filters input#search {
@@ -106,22 +113,42 @@
                 left: 0;
                 width: 100%;
                 height: 100%;
+                justify-content: space-around;
+                align-items: center;
+                font-family: "DejaVu Sans", sans-serif;
+            }
+
+            #modal-content {
+                width: 50%;
+                display: flex;
+                flex-flow: row nowrap;
+                align-items: center;
+                justify-content: space-evenly;
             }
 
             #modal-img {
                 z-index: 1000;
-                position: fixed;
-                width: auto;
-                max-height: 99vh;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                animation: none;
+                /* position: fixed;
+                 width: auto;
+                 max-height: 99vh;
+                 top: 50%;
+                 left: 50%;
+                 transform: translate(-50%, -50%);
+                 animation: none;*/
             }
 
             #modal-img.show {
                 /*animation: fadein ease-out 1s;
                 animation-delay: -0.5s;*/
+            }
+
+            #modal-content ul li {
+                list-style-type: none;
+                margin: 3vh 0;
+            }
+
+            #modal-content a {
+                color: white;
             }
 
             @keyframes fadein {
@@ -143,9 +170,16 @@
                     {{.}}
                 </label>
             {{end}}
-            <label style="padding-left: 50px">
+            <label for="search" style="padding-left: 50px">
                 Search:
                 <input id="search" type="text" title="Included in image name, case insensitive">
+            </label>
+            <label id="img-count" title="visible/total"></label>
+        </div>
+        <div id="scaler-container">
+            <label for="scaler" title="Middleclick to reset">
+                <span>Scale:&nbsp;</span>
+                <input id="scaler" type="range" min="10" max="30" step="1">
             </label>
         </div>
         <div id="version">Version: {{.Version}}</div>
@@ -161,11 +195,39 @@
         {{end}}
     </div>
     <div id="modal" title="Click to close">
-        <img id="modal-img" src="" alt=""/>
+        <div id="modal-content">
+            <img id="modal-img" src="" alt=""/>
+            <ul id="modal-links">
+                    <li>
+                        <a href=""></a>
+                    </li>
+            </ul>
+        </div>
     </div>
     <script>
+        function countImages() {
+            const visible = document.querySelectorAll("div.img-container:not(.filter-hidden):not(.search-hidden)").length;
+            const total = document.querySelectorAll("div.img-container").length;
+            document.getElementById("img-count").innerText = "(" + visible + " / " + total + ")";
+        }
+
         document.addEventListener("DOMContentLoaded", () => {
-            const initialWindowHeight = window.innerHeight;
+
+            countImages();
+
+            const scaler = document.getElementById("scaler");
+            scaler.value = 22;
+            const updateScale = () => {
+                const imgWidth = (40 - scaler.value) + "vw";
+                document.querySelectorAll("img:not(#modal-img)").forEach(img => img.style.maxWidth = imgWidth);
+            }
+            scaler.addEventListener("input", updateScale);
+            document.getElementById("scaler-container").addEventListener("auxclick", () => {
+                scaler.value = 22;
+                updateScale();
+            })
+
+            /*const initialWindowHeight = window.innerHeight;
 
             const initialHeaderHeight = 20;
             const initialHeaderPadding = 10;
@@ -212,9 +274,7 @@
                 // Version
                 const calculatedVersion = getRatio(initialVersionSize);
                 header.querySelector("#version").style.fontSize = calculatedVersion + "px";
-
-
-            }
+            }*/
         });
     </script>
 {{end}}

@@ -14,6 +14,7 @@ import (
 
 type templateData struct {
 	Version         string
+	WindowTitle     string
 	BucketName      string
 	PrefixName      string
 	Previews        []string
@@ -27,6 +28,7 @@ func startWebServer(port uint16) error {
 	http.HandleFunc("/", indexHandler)
 	http.HandleFunc("/image/", imageHandler)
 	http.HandleFunc("/images", imagesListHandler)
+	http.HandleFunc("/links/", linksHandler)
 	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNoContent) // for ping
 	})
@@ -56,6 +58,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	executeTemplate(w, tmpl, templateData{
 		Version:         version,
+		WindowTitle:     config.WindowTitle,
 		BucketName:      config.S3.BucketName,
 		PrefixName:      config.S3.KeyPrefix,
 		Previews:        getImagesNames(),
@@ -88,6 +91,16 @@ func imageHandler(w http.ResponseWriter, r *http.Request) {
 
 func imagesListHandler(w http.ResponseWriter, r *http.Request) {
 	prettier(w, "Images list", getImagesNames(), http.StatusOK)
+}
+
+func linksHandler(w http.ResponseWriter, r *http.Request) {
+	imgName := strings.TrimPrefix(r.URL.Path, "/links/")
+	imgDir := strings.TrimSuffix(imgName, config.PreviewFilename)
+	links, found := fullProductLinksCache[imgDir]
+	if !found {
+		links = []string{}
+	}
+	prettier(w, "Image links", links, http.StatusOK)
 }
 
 func deleteCookies(w http.ResponseWriter, r *http.Request) {

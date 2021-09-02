@@ -154,6 +154,7 @@ func websocketHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	executeTemplate(w, tmpl, templateData{
 		Version:         version,
+		WindowTitle:     config.WindowTitle,
 		BucketName:      config.S3.BucketName,
 		PrefixName:      config.S3.KeyPrefix,
 		Previews:        getImagesNames(),
@@ -171,6 +172,7 @@ func startWSServer(port uint16, eventChan chan event) error {
 		serveWs(hub, w, r)
 	})
 	http.HandleFunc("/image/", imageHandler)
+	http.HandleFunc("/links/", linksHandler)
 
 	fmt.Println("\nStarting web socket server on port", port, "...")
 	return http.ListenAndServe(":"+strconv.FormatUint(uint64(port), 10), nil)
