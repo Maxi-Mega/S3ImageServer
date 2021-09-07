@@ -97,6 +97,9 @@
             modalImg.classList.remove("show");
             modal.style.display = "";
         });
+        document.getElementById("modal-links").addEventListener("click", ev => {
+            ev.stopPropagation();
+        });
 
         document.querySelectorAll(".filters input[type=checkbox]").forEach(inpt => {
             inpt.checked = true;

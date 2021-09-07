@@ -138,13 +138,17 @@
             }
 
             #modal-img.show {
-                /*animation: fadein ease-out 1s;
-                animation-delay: -0.5s;*/
+                max-width: 80vw;
+                max-height: 80vh;
             }
 
             #modal-content ul li {
                 list-style-type: none;
                 margin: 3vh 0;
+            }
+
+            #modal-links {
+                padding: 0;
             }
 
             #modal-content a {
@@ -186,7 +190,7 @@
     </header>
     <div class="container">
         {{range .Previews}}
-            <div class="img-container">
+            <div class="img-container" title="{{.}}">
                 <img src="/image/{{.}}" alt="{{.}}"/>
                 <br/>
                 <a class="img-title" href="/image/{{.}}" target="_blank"
@@ -198,9 +202,9 @@
         <div id="modal-content">
             <img id="modal-img" src="" alt=""/>
             <ul id="modal-links">
-                    <li>
-                        <a href=""></a>
-                    </li>
+                <li>
+                    <a href=""></a>
+                </li>
             </ul>
         </div>
     </div>
@@ -220,6 +224,8 @@
             const updateScale = () => {
                 const imgWidth = (40 - scaler.value) + "vw";
                 document.querySelectorAll("img:not(#modal-img)").forEach(img => img.style.maxWidth = imgWidth);
+                const fontSize = Math.round(13 - scaler.value / 5) + "px";
+                document.querySelectorAll("a.img-title").forEach(title => title.style.fontSize = fontSize);
             }
             scaler.addEventListener("input", updateScale);
             document.getElementById("scaler-container").addEventListener("auxclick", () => {
