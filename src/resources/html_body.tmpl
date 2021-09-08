@@ -119,11 +119,12 @@
             }
 
             #modal-content {
-                width: 50%;
+                min-width: 50%;
+                max-width: 90%;
                 display: flex;
                 flex-flow: row nowrap;
                 align-items: center;
-                justify-content: space-evenly;
+                justify-content: space-between;
             }
 
             #modal-img {
@@ -142,13 +143,33 @@
                 max-height: 80vh;
             }
 
-            #modal-content ul li {
-                list-style-type: none;
-                margin: 3vh 0;
+            #modal-details {
+                display: flex;
+                flex-flow: column wrap;
+                padding: 20px;
+                background-color: rgba(0, 0, 0, 0.9);
+                color: white;
+            }
+
+            #modal-details h3 {
+                font-weight: normal;
+                margin: 10px 0;
+            }
+
+            #modal-details hr {
+                border-bottom: 0;
+                width: 50%;
             }
 
             #modal-links {
+                width: 100%;
+                margin-top: 0;
                 padding: 0;
+            }
+
+            #modal-links li {
+                list-style-type: none;
+                margin: 10px 0;
             }
 
             #modal-content a {
@@ -190,7 +211,7 @@
     </header>
     <div class="container">
         {{range .Previews}}
-            <div class="img-container" title="{{.}}">
+            <div class="img-container">
                 <img src="/image/{{.}}" alt="{{.}}"/>
                 <br/>
                 <a class="img-title" href="/image/{{.}}" target="_blank"
@@ -201,11 +222,17 @@
     <div id="modal" title="Click to close">
         <div id="modal-content">
             <img id="modal-img" src="" alt=""/>
-            <ul id="modal-links">
-                <li>
-                    <a href=""></a>
-                </li>
-            </ul>
+            <div id="modal-details">
+                <h3 id="modal-img-type"></h3>
+                <h3 id="modal-img-name"></h3>
+                <h3 id="modal-img-date"></h3>
+                <hr/>
+                <ul id="modal-links">
+                    <li>
+                        <a href=""></a>
+                    </li>
+                </ul>
+            </div>
         </div>
     </div>
     <script>
@@ -215,72 +242,26 @@
             document.getElementById("img-count").innerText = "(" + visible + " / " + total + ")";
         }
 
+        function updateScale() {
+            const scaler = document.getElementById("scaler");
+            const imgWidth = (40 - scaler.value) + "vw";
+            document.querySelectorAll("img:not(#modal-img)").forEach(img => img.style.maxWidth = imgWidth);
+            const fontSize = Math.round(13 - scaler.value / 5) + "px";
+            document.querySelectorAll("a.img-title").forEach(title => title.style.fontSize = fontSize);
+        }
+
         document.addEventListener("DOMContentLoaded", () => {
 
             countImages();
+            updateScale();
 
             const scaler = document.getElementById("scaler");
             scaler.value = 22;
-            const updateScale = () => {
-                const imgWidth = (40 - scaler.value) + "vw";
-                document.querySelectorAll("img:not(#modal-img)").forEach(img => img.style.maxWidth = imgWidth);
-                const fontSize = Math.round(13 - scaler.value / 5) + "px";
-                document.querySelectorAll("a.img-title").forEach(title => title.style.fontSize = fontSize);
-            }
             scaler.addEventListener("input", updateScale);
             document.getElementById("scaler-container").addEventListener("auxclick", () => {
                 scaler.value = 22;
                 updateScale();
             })
-
-            /*const initialWindowHeight = window.innerHeight;
-
-            const initialHeaderHeight = 20;
-            const initialHeaderPadding = 10;
-            const initialLabelSize = 14;
-            const initialLabelMargin = 40;
-            const initialCheckboxSize = 100;
-            const initialCheckboxMargin = 3;
-            const initialTextInputSize = 13;
-            const initialVersionSize = 12;
-            const header = document.querySelector("header");
-
-            window.visualViewport.onresize = () => {
-                const height = window.innerHeight;
-                const getRatio = initialSize => initialSize * height / initialWindowHeight;
-
-                // Header
-                const calculatedHeight = getRatio(initialHeaderHeight);
-                header.style.height = calculatedHeight + "px";
-                const calculatedPadding = getRatio(initialHeaderPadding);
-                header.style.padding = calculatedPadding + "px 0";
-
-                // Labels
-                const calculatedLabel = getRatio(initialLabelSize);
-                const calculatedLabelMargin = getRatio(initialLabelMargin);
-                header.querySelectorAll(".filters label").forEach(e => {
-                    e.style.fontSize = calculatedLabel + "px";
-                    e.style.marginLeft = calculatedLabelMargin + "px";
-                });
-
-                // Checkboxes
-                const calculatedCheckbox = getRatio(initialCheckboxSize);
-                const calculatedCheckboxMargin = getRatio(initialCheckboxMargin);
-                header.querySelectorAll(".filters input[type='checkbox']").forEach(e => {
-                    e.style.transform = `scale(${calculatedCheckbox}%`;
-                    e.style.margin = calculatedCheckboxMargin + "px";
-                });
-
-                // Text input
-                const calculatedTextInput = getRatio(initialTextInputSize);
-                header.querySelectorAll(".filters input[type='text']").forEach(e => {
-                    e.style.fontSize = calculatedTextInput + "px";
-                });
-
-                // Version
-                const calculatedVersion = getRatio(initialVersionSize);
-                header.querySelector("#version").style.fontSize = calculatedVersion + "px";
-            }*/
         });
     </script>
 {{end}}

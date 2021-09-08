@@ -110,6 +110,11 @@ func generateImagesCache() map[string]time.Time {
 	return cache
 }
 
+type ImageInfos struct {
+	Date  string   `json:"date"`
+	Links []string `json:"links"`
+}
+
 func prettier(w http.ResponseWriter, message string, data interface{}, status int) {
 	if data == nil {
 		data = struct{}{}

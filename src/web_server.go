@@ -28,7 +28,7 @@ func startWebServer(port uint16) error {
 	http.HandleFunc("/", indexHandler)
 	http.HandleFunc("/image/", imageHandler)
 	http.HandleFunc("/images", imagesListHandler)
-	http.HandleFunc("/links/", linksHandler)
+	http.HandleFunc("/infos/", infosHandler)
 	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNoContent) // for ping
 	})
@@ -93,14 +93,25 @@ func imagesListHandler(w http.ResponseWriter, r *http.Request) {
 	prettier(w, "Images list", getImagesNames(), http.StatusOK)
 }
 
-func linksHandler(w http.ResponseWriter, r *http.Request) {
-	imgName := strings.TrimPrefix(r.URL.Path, "/links/")
+func infosHandler(w http.ResponseWriter, r *http.Request) {
+	imgName := strings.TrimPrefix(r.URL.Path, "/infos/")
+	date, found := imagesCache[imgName]
+	var strDate string
+	if found {
+		strDate = date.Format(time.RFC3339)
+	} else {
+		strDate = "N/A"
+	}
 	imgDir := strings.TrimSuffix(imgName, config.PreviewFilename)
+	imgDir = strings.ReplaceAll(imgDir, "@", string(os.PathSeparator))
 	links, found := fullProductLinksCache[imgDir]
 	if !found {
 		links = []string{}
 	}
-	prettier(w, "Image links", links, http.StatusOK)
+	prettier(w, "Image infos", ImageInfos{
+		Date:  strDate,
+		Links: links,
+	}, http.StatusOK)
 }
 
 func deleteCookies(w http.ResponseWriter, r *http.Request) {

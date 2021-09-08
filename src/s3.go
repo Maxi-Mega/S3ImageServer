@@ -50,10 +50,10 @@ func existsInCache(imgName string, obj minio.ObjectInfo) bool {
 
 func listFullProductImages(minioClient *minio.Client, dirs []string) {
 	log(fmt.Sprintf("Looking for full product images in bucket [%s] ...", config.S3.BucketName))
-	fullProductLinksCache = map[string][]string{}
+	tempFullProductLinksCache := map[string][]string{}
 	for _, dir := range dirs {
-		fullProductLinksCache[dir] = []string{}
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		tempFullProductLinksCache[dir] = []string{}
+		ctx, cancel := context.WithTimeout(context.Background(), config.PollingPeriod)
 		defer cancel()
 		for obj := range minioClient.ListObjects(ctx, config.S3.BucketName, minio.ListObjectsOptions{Prefix: dir}) {
 			if obj.Err != nil {
@@ -64,9 +64,10 @@ func listFullProductImages(minioClient *minio.Client, dirs []string) {
 				continue
 			}
 
-			fullProductLinksCache[dir] = append(fullProductLinksCache[dir], config.FullProductProtocol+"://"+config.S3.BucketName+"/"+obj.Key)
+			tempFullProductLinksCache[dir] = append(tempFullProductLinksCache[dir], config.FullProductProtocol+"://"+config.S3.BucketName+"/"+obj.Key)
 		}
 	}
+	fullProductLinksCache = tempFullProductLinksCache
 }
 
 func extractFilesFromBucket(minioClient *minio.Client, eventChan chan event) error {

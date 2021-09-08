@@ -14,20 +14,21 @@
     const modalLinks = document.getElementById("modal-links");
 
     function formatTitle(title) {
-        title = title.substring(prefixName.length + 1).replaceAll("@", "/").replace("/" + previewFilename, "");
+        title = title.substring(prefixName.length === 0 ? 0 : prefixName.length + 1).replaceAll("@", "/").replace("/" + previewFilename, "");
         const imgType = title.substring(0, title.indexOf("/"));
         const imgName = title.substring(title.lastIndexOf("/") + 1);
         return imgType + "\n" + imgName;
     }
 
     function modalize(img) {
-        fetch("links/" + img.alt.replaceAll("@", "/")).then(response => {
-            response.json().then(links => {
-                console.log("Links:", links);
+        fetch("infos/" + img.alt).then(response => { // .replaceAll("@", "/")
+            response.json().then(jsonData => {
+                jsonData = jsonData.data;
+                document.getElementById("modal-img-date").innerText = "Generation date: " + jsonData["date"];
                 while (modalLinks.hasChildNodes()) {
                     modalLinks.removeChild(modalLinks.firstChild);
                 }
-                for (const link of links.data) {
+                for (const link of jsonData["links"]) {
                     const li = document.createElement("li");
                     const a = document.createElement("a");
                     a.href = link;
@@ -44,6 +45,9 @@
         modalImg.classList.add("show");
         modalImg.src = img.src;
         modalImg.alt = img.alt;
+        const parentDiv = img.parentElement;
+        document.getElementById("modal-img-type").innerText = "Type: " + parentDiv.getAttribute("img-type");
+        document.getElementById("modal-img-name").innerText = "Name: " + parentDiv.getAttribute("img-name");
         modal.style.display = "flex";
     }
 
@@ -57,13 +61,15 @@
         newA.href = "/image/" + img;
         newA.target = "_blank";
         newA.title = "Click to open the image in a new tab";
-        newA.innerText = formatTitle(img);
+        const imgTitle = formatTitle(img);
+        newA.innerText = imgTitle;
         const newDiv = document.createElement("div");
         newDiv.classList.add("img-container");
         newDiv.appendChild(newImg);
         newDiv.appendChild(newA);
         const imgType = img.substring(prefixName.length + 1).split("@")[0];
         newDiv.setAttribute("img-type", imgType);
+        newDiv.setAttribute("img-name", imgTitle.substring(imgTitle.indexOf("\n") + 1));
         if (inputs.hasOwnProperty(imgType)) {
             if (!inputs[imgType].checked) {
                 newDiv.classList.add("filter-hidden");
@@ -108,8 +114,10 @@
 
     document.addEventListener("DOMContentLoaded", () => {
         document.querySelectorAll(".img-title").forEach(p => {
-            p.innerText = formatTitle(p.innerText);
+            const imgTitle = formatTitle(p.innerText);
+            p.innerText = imgTitle;
             p.parentElement.setAttribute("img-type", p.innerText.split("\n")[0]);
+            p.parentElement.setAttribute("img-name", imgTitle.substring(imgTitle.indexOf("\n") + 1));
         });
         document.querySelectorAll("img:not(#modal-img)").forEach(img => {
             img.addEventListener("click", () => modalize(img));

@@ -172,7 +172,7 @@ func startWSServer(port uint16, eventChan chan event) error {
 		serveWs(hub, w, r)
 	})
 	http.HandleFunc("/image/", imageHandler)
-	http.HandleFunc("/links/", linksHandler)
+	http.HandleFunc("/infos/", infosHandler)
 
 	fmt.Println("\nStarting web socket server on port", port, "...")
 	return http.ListenAndServe(":"+strconv.FormatUint(uint64(port), 10), nil)
