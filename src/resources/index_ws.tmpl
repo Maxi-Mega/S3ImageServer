@@ -64,7 +64,7 @@
         newDiv.classList.add("img-container");
         newDiv.appendChild(newImg);
         newDiv.appendChild(newA);
-        const imgType = img.substring(prefixName.length + 1).split("@")[0];
+        const imgType = img.substring(prefixName.length === 0 ? 0 : prefixName.length + 1).split("@")[0];
         newDiv.setAttribute("img-type", imgType);
         newDiv.setAttribute("img-name", imgTitle.substring(imgTitle.indexOf("\n") + 1));
         if (inputs.hasOwnProperty(imgType)) {

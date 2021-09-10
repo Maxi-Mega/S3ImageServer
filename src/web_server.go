@@ -98,7 +98,7 @@ func infosHandler(w http.ResponseWriter, r *http.Request) {
 	date, found := imagesCache[imgName]
 	var strDate string
 	if found {
-		strDate = date.Format(time.RFC3339)
+		strDate = date.Format("2006-01-02 15:04:05")
 	} else {
 		strDate = "N/A"
 	}
