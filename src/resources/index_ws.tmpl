@@ -11,7 +11,7 @@
     const container = document.querySelector("div.container");
 
     function formatTitle(title) {
-        title = title.substring(prefixName.length + 1).replaceAll("@", "/").replace("/" + previewFilename, "");
+        title = title.substring(prefixName.length === 0 ? 0 : prefixName.length + 1, title.lastIndexOf("@")).replaceAll("@", "/"); // .replace("/" + previewFilename, "");
         const imgType = title.substring(0, title.indexOf("/"));
         const imgName = title.substring(title.lastIndexOf("/") + 1);
         return imgType + "\n" + imgName;

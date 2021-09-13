@@ -49,7 +49,7 @@ func existsInCache(imgName string, obj minio.ObjectInfo) bool {
 }
 
 func listFullProductImages(minioClient *minio.Client, dirs []string) {
-	log(fmt.Sprintf("Looking for full product images in bucket [%s] ...", config.S3.BucketName))
+	log(fmt.Sprintf("Looking for %q files in bucket [%s] ...", config.FullProductExtension, config.S3.BucketName))
 	tempFullProductLinksCache := map[string][]string{}
 	for _, dir := range dirs {
 		tempFullProductLinksCache[dir] = []string{}
