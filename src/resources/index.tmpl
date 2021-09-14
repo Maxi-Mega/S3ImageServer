@@ -89,7 +89,7 @@
         }
         countImages();
         setTimeout(() => {
-            document.body.removeChild(newDiv);
+            /*container.removeChild(newDiv);*/
             // remove from images list
             images.splice(images.indexOf(img), 1);
             countImages();
@@ -122,7 +122,7 @@
         document.querySelectorAll("img:not(#modal-img)").forEach(img => {
             img.addEventListener("click", () => modalize(img));
             setTimeout(() => {
-                document.body.removeChild(img.parentElement);
+                img.parentElement.parentElement.removeChild(img.parentElement);
                 // remove from images list
                 images.splice(images.indexOf(img.alt), 1);
             }, retentionPeriod * 1000);
