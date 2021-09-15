@@ -153,13 +153,14 @@ func websocketHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	executeTemplate(w, tmpl, templateData{
-		Version:         version,
-		WindowTitle:     config.WindowTitle,
-		BucketName:      config.S3.BucketName,
-		PrefixName:      config.S3.KeyPrefix,
-		Previews:        getImagesNames(),
-		PreviewFilename: config.PreviewFilename,
-		ImageTypes:      config.ImageTypes,
+		Version:                version,
+		WindowTitle:            config.WindowTitle,
+		ScaleInitialPercentage: config.ScaleInitialPercentage,
+		BucketName:             config.S3.BucketName,
+		PrefixName:             config.S3.KeyPrefix,
+		Previews:               getImagesNames(),
+		PreviewFilename:        config.PreviewFilename,
+		ImageTypes:             config.ImageTypes,
 	})
 }
 

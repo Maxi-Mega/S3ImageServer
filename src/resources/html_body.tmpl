@@ -257,10 +257,15 @@
             updateScale();
 
             const scaler = document.getElementById("scaler");
-            scaler.value = 22;
+            const scalerMinValue = 10;
+            const scalerMaxValue = 30;
+            const scalerInitialPercentage = {{.ScaleInitialPercentage}};
+            const scalerInitialValue = scalerMinValue + ((scalerMaxValue - scalerMinValue) * scalerInitialPercentage / 100.0);
+            console.log("scalerInitialPercentage:", scalerInitialPercentage, "/ scalerInitialValue:", scalerInitialValue);
+            scaler.value = scalerInitialValue;
             scaler.addEventListener("input", updateScale);
             document.getElementById("scaler-container").addEventListener("auxclick", () => {
-                scaler.value = 22;
+                scaler.value = scalerInitialValue;
                 updateScale();
             })
         });

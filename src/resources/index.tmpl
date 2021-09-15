@@ -1,8 +1,11 @@
 {{template "html_body" .}}
 <script>
-    let images = {{.Previews}} || [];
-    const previewFilename = {{.PreviewFilename}} || "";
-    const prefixName = {{.PrefixName}} || "";
+    let images = {{.Previews}} ||
+    [];
+    const previewFilename = {{.PreviewFilename}} ||
+    "";
+    const prefixName = {{.PrefixName}} ||
+    "";
     const retentionPeriod = {{.RetentionPeriod}}; // in seconds
     const refreshPeriod = {{.PollingPeriod}}; // in seconds
 
@@ -89,11 +92,14 @@
         }
         countImages();
         setTimeout(() => {
-            /*container.removeChild(newDiv);*/
-            // remove from images list
-            images.splice(images.indexOf(img), 1);
-            countImages();
+            if (container.contains(newDiv)) {
+                container.removeChild(newDiv);
+                // remove from images list
+                images.splice(images.indexOf(img), 1);
+                countImages();
+            }
         }, retentionPeriod * 1000);
+        console.info("Scheduled image removal at in", retentionPeriod + "s");
         // };
         newImg.onerror = () => {
             console.warn("Image", img, "not found");
@@ -122,9 +128,10 @@
         document.querySelectorAll("img:not(#modal-img)").forEach(img => {
             img.addEventListener("click", () => modalize(img));
             setTimeout(() => {
-                img.parentElement.parentElement.removeChild(img.parentElement);
+                container.removeChild(img.parentElement);
                 // remove from images list
                 images.splice(images.indexOf(img.alt), 1);
+                countImages();
             }, retentionPeriod * 1000);
         });
         modal.addEventListener("click", () => {
@@ -191,6 +198,7 @@
                 const sameImages = arrArraysEquals(lastestImages, images);
                 if (!sameImages) {
                     container.querySelectorAll("div.img-container").forEach(e => container.removeChild(e));
+                    countImages();
                     images = lastestImages;
                     for (let i = images.length - 1; i >= 0; i--) {
                         console.info("Found new image:", images[i]);

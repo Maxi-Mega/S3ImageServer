@@ -13,15 +13,16 @@ import (
 )
 
 type templateData struct {
-	Version         string
-	WindowTitle     string
-	BucketName      string
-	PrefixName      string
-	Previews        []string
-	PreviewFilename string
-	ImageTypes      []string
-	RetentionPeriod float64
-	PollingPeriod   float64
+	Version                string
+	WindowTitle            string
+	ScaleInitialPercentage uint8
+	BucketName             string
+	PrefixName             string
+	Previews               []string
+	PreviewFilename        string
+	ImageTypes             []string
+	RetentionPeriod        float64
+	PollingPeriod          float64
 }
 
 func startWebServer(port uint16) error {
@@ -57,15 +58,16 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	executeTemplate(w, tmpl, templateData{
-		Version:         version,
-		WindowTitle:     config.WindowTitle,
-		BucketName:      config.S3.BucketName,
-		PrefixName:      config.S3.KeyPrefix,
-		Previews:        getImagesNames(),
-		PreviewFilename: config.PreviewFilename,
-		ImageTypes:      config.ImageTypes,
-		RetentionPeriod: config.RetentionPeriod.Seconds(),
-		PollingPeriod:   config.PollingPeriod.Seconds(),
+		Version:                version,
+		WindowTitle:            config.WindowTitle,
+		ScaleInitialPercentage: config.ScaleInitialPercentage,
+		BucketName:             config.S3.BucketName,
+		PrefixName:             config.S3.KeyPrefix,
+		Previews:               getImagesNames(),
+		PreviewFilename:        config.PreviewFilename,
+		ImageTypes:             config.ImageTypes,
+		RetentionPeriod:        config.RetentionPeriod.Seconds(),
+		PollingPeriod:          config.PollingPeriod.Seconds(),
 	})
 }
 

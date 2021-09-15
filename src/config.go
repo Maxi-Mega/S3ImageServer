@@ -8,6 +8,7 @@ import (
 	"os"
 	"path"
 	"reflect"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -28,11 +29,12 @@ type S3Config struct {
 type Config struct {
 	S3 S3Config `yaml:"s3"`
 
-	WindowTitle          string   `yaml:"windowTitle"`
-	PreviewFilename      string   `yaml:"previewFilename"`
-	FullProductExtension string   `yaml:"fullProductExtension"`
-	FullProductProtocol  string   `yaml:"fullProductProtocol"`
-	ImageTypes           []string `yaml:"imageTypes"`
+	WindowTitle            string   `yaml:"windowTitle"`
+	ScaleInitialPercentage uint8    `yaml:"scaleInitialPercentage"`
+	PreviewFilename        string   `yaml:"previewFilename"`
+	FullProductExtension   string   `yaml:"fullProductExtension"`
+	FullProductProtocol    string   `yaml:"fullProductProtocol"`
+	ImageTypes             []string `yaml:"imageTypes"`
 
 	Debug           bool          `yaml:"debug"`
 	HttpTrace       bool          `yaml:"httpTrace"`
@@ -72,6 +74,10 @@ func (config *Config) loadDefaults() {
 		case "WindowTitle":
 			if fieldValue.(string) == "" {
 				config.WindowTitle = defaultConfig.WindowTitle
+			}
+		case "ScaleInitialPercentage":
+			if fieldValue.(uint8) < 1 || fieldValue.(uint8) > 100 {
+				config.ScaleInitialPercentage = 50
 			}
 		case "Debug":
 			/*if fieldValue.(bool) == false {
@@ -152,6 +158,7 @@ func (config Config) String() string {
 	s3 := config.S3
 	result += fmt.Sprintf("\tendPoint: %s\n\tbucketName: %s\n\tkeyPrefix: %s\n\taccessId: %s\n\taccessSecret: %s\n", s3.EndPoint, s3.BucketName, s3.KeyPrefix, s3.AccessId, s3.AccessSecret)
 	result += "windowTitle: " + config.WindowTitle + "\n"
+	result += "scaleInitialPercentage: " + strconv.FormatUint(uint64(config.ScaleInitialPercentage), 10) + "\n"
 	result += "previewFilename: " + config.PreviewFilename + "\n"
 	result += "fullProductExtension: " + config.FullProductExtension + "\n"
 	result += "fullProductProtocol: " + config.FullProductProtocol + "\n"

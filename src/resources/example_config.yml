@@ -7,6 +7,7 @@ s3:
   useSSL: false                 # Not tested
 
 windowTitle: "S3 Image Viewer"
+scaleInitialPercentage: 50
 previewFilename: "preview.jpg"
 fullProductExtension: "tif"
 fullProductProtocol: "protocol"

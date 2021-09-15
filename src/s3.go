@@ -80,12 +80,12 @@ func extractFilesFromBucket(minioClient *minio.Client, eventChan chan event) err
 			return obj.Err
 		}
 
-		if obj.LastModified.Add(config.RetentionPeriod).Before(time.Now()) {
-			log("Found image '" + obj.Key + "', ignored because older than " + config.RetentionPeriod.String())
+		if !strings.HasSuffix(obj.Key, config.PreviewFilename) {
 			continue
 		}
 
-		if !strings.HasSuffix(obj.Key, config.PreviewFilename) {
+		if obj.LastModified.Add(config.RetentionPeriod).Before(time.Now()) {
+			log("Found image '" + obj.Key + "', ignored because older than " + config.RetentionPeriod.String())
 			continue
 		}
 
