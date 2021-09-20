@@ -18,12 +18,17 @@ func getFileFromBucket(minioClient *minio.Client, objKey, formattedKey string, l
 	if err != nil {
 		return err
 	}
-	time.AfterFunc(config.RetentionPeriod, func() {
+	eventChan <- event{EventType: eventAdd, EventObj: formattedKey, EventDate: lastModTime.String()}
+	if timer, found := timers[formattedKey]; found {
+		timer.Stop()
+	}
+	timers[formattedKey] = time.AfterFunc(config.RetentionPeriod, func() {
 		delete(imagesCache, formattedKey)
 		deleteImageFromCache(formattedKey)
-		if !config.PollingMode && eventChan != nil {
-			eventChan <- event{eventType: eventRemove, eventObj: formattedKey}
+		if eventChan != nil {
+			eventChan <- event{EventType: eventRemove, EventObj: formattedKey}
 		}
+		delete(timers, formattedKey)
 	})
 	return os.Chtimes(filePath, lastModTime, lastModTime)
 }
@@ -110,16 +115,17 @@ func extractFilesFromBucket(minioClient *minio.Client, eventChan chan event) err
 	return nil
 }
 
-func pollBucket(minioClient *minio.Client) {
+func pollBucket(minioClient *minio.Client, eventChan chan event) {
 	go func() {
 		for {
 			time.Sleep(config.PollingPeriod)
-			err := extractFilesFromBucket(minioClient, nil)
+			err := extractFilesFromBucket(minioClient, eventChan)
 			if err != nil {
 				printError(err, false)
 			}
 		}
 	}()
+	fmt.Println("Started polling")
 }
 
 func listenToBucket(minioClient *minio.Client, eventChan chan event) {
@@ -149,13 +155,14 @@ func listenToBucket(minioClient *minio.Client, eventChan chan event) {
 							printError(err, false)
 							continue
 						}
+						// TODO: list full product images
 						imagesCache[formattedName] = time.Now()
-						eventChan <- event{eventType: eventAdd, eventObj: formattedName}
+						eventChan <- event{EventType: eventAdd, EventObj: formattedName, EventDate: time.Now().String()}
 					} else if strings.HasPrefix(e.EventName, "s3:ObjectRemoved") {
 						log("[Removed]:", objKey)
 						deleteImageFromCache(formattedName)
 						delete(imagesCache, formattedName)
-						eventChan <- event{eventType: eventRemove, eventObj: formattedName}
+						eventChan <- event{EventType: eventRemove, EventObj: formattedName}
 					}
 				}
 			}

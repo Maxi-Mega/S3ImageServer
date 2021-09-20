@@ -19,6 +19,7 @@ type templateData struct {
 	BucketName             string
 	PrefixName             string
 	Previews               []string
+	PreviewsMap            map[string]time.Time
 	PreviewFilename        string
 	ImageTypes             []string
 	RetentionPeriod        float64
@@ -64,6 +65,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		BucketName:             config.S3.BucketName,
 		PrefixName:             config.S3.KeyPrefix,
 		Previews:               getImagesNames(),
+		PreviewsMap:            imagesCache,
 		PreviewFilename:        config.PreviewFilename,
 		ImageTypes:             config.ImageTypes,
 		RetentionPeriod:        config.RetentionPeriod.Seconds(),
@@ -92,7 +94,7 @@ func imageHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func imagesListHandler(w http.ResponseWriter, r *http.Request) {
-	prettier(w, "Images list", getImagesNames(), http.StatusOK)
+	prettier(w, "Images list", imagesCache, http.StatusOK)
 }
 
 func infosHandler(w http.ResponseWriter, r *http.Request) {

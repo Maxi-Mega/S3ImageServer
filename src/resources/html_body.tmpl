@@ -237,6 +237,8 @@
         </div>
     </div>
     <script>
+        let currentImgWidth, currentFontSize;
+
         function countImages() {
             const visible = document.querySelectorAll("div.img-container:not(.filter-hidden):not(.search-hidden)").length;
             const total = document.querySelectorAll("div.img-container").length;
@@ -246,28 +248,33 @@
         function updateScale() {
             const scaler = document.getElementById("scaler");
             const imgWidth = (40 - scaler.value) + "vw";
+            currentImgWidth = imgWidth;
             document.querySelectorAll("img:not(#modal-img)").forEach(img => img.style.maxWidth = imgWidth);
             const fontSize = Math.round(13 - scaler.value / 5) + "px";
+            currentFontSize = fontSize;
             document.querySelectorAll("a.img-title").forEach(title => title.style.fontSize = fontSize);
         }
 
         document.addEventListener("DOMContentLoaded", () => {
 
             countImages();
-            updateScale();
 
             const scaler = document.getElementById("scaler");
             const scalerMinValue = 10;
             const scalerMaxValue = 30;
             const scalerInitialPercentage = {{.ScaleInitialPercentage}};
             const scalerInitialValue = scalerMinValue + ((scalerMaxValue - scalerMinValue) * scalerInitialPercentage / 100.0);
+            currentImgWidth = scalerInitialValue;
+            currentFontSize = "10px";
             console.log("scalerInitialPercentage:", scalerInitialPercentage, "/ scalerInitialValue:", scalerInitialValue);
             scaler.value = scalerInitialValue;
             scaler.addEventListener("input", updateScale);
             document.getElementById("scaler-container").addEventListener("auxclick", () => {
                 scaler.value = scalerInitialValue;
                 updateScale();
-            })
+            });
+
+            updateScale();
         });
     </script>
 {{end}}

@@ -1,14 +1,17 @@
 {{template "html_body" .}}
 <script>
-    const images = {{.Previews}} || [];
-    const previewFilename = {{.PreviewFilename}} || "";
-    const prefixName = {{.PrefixName}} || "";
+    const images = {{.PreviewsMap}};
+    const previewFilename = {{.PreviewFilename}};
+    const prefixName = {{.PrefixName}};
+    const retentionPeriod = {{.RetentionPeriod}}; // in seconds
+    const refreshPeriod = {{.PollingPeriod}}; // in seconds
 
-    const modal = document.getElementById("modal");
-    const modalImg = document.getElementById("modal-img");
     const inputs = {};
     const searchInput = document.getElementById("search");
     const container = document.querySelector("div.container");
+    const modal = document.getElementById("modal");
+    const modalImg = document.getElementById("modal-img");
+    const modalLinks = document.getElementById("modal-links");
 
     function formatTitle(title) {
         title = title.substring(prefixName.length === 0 ? 0 : prefixName.length + 1, title.lastIndexOf("@")).replaceAll("@", "/"); // .replace("/" + previewFilename, "");
@@ -48,16 +51,18 @@
         modal.style.display = "flex";
     }
 
-    function addNewImg(img, addToList = true) {
+    function addNewImg(img, date, addToList = true) {
         const newImg = document.createElement("img");
         newImg.src = "/image/" + img;
         newImg.alt = img;
+        newImg.style.maxWidth = currentImgWidth;
         newImg.addEventListener("click", () => modalize(newImg));
         const newA = document.createElement("a");
         newA.classList.add("img-title");
         newA.href = "/image/" + img;
         newA.target = "_blank";
         newA.title = "Click to open the image in a new tab";
+        newA.style.fontSize = currentFontSize;
         const imgTitle = formatTitle(img);
         newA.innerText = imgTitle;
         const newDiv = document.createElement("div");
@@ -78,12 +83,13 @@
             }
         }
 
-       //  newImg.onload = () => {
-            // document.body.appendChild(newDiv);
-            container.insertBefore(newDiv, container.firstChild);
-            if (addToList) {
-                images.push(img);
-            }
+        //  newImg.onload = () => {
+        // document.body.appendChild(newDiv);
+        container.insertBefore(newDiv, container.firstChild);
+        if (addToList) {
+            // images.push(img);
+            images[img] = date;
+        }
         countImages();
         // };
         newImg.onerror = () => {
@@ -98,8 +104,15 @@
             p.parentElement.setAttribute("img-type", p.innerText.split("\n")[0]);
             p.parentElement.setAttribute("img-name", imgTitle.substring(imgTitle.indexOf("\n") + 1));
         });
-        document.querySelectorAll("img").forEach(img => {
+        document.querySelectorAll("img:not(#modal-img)").forEach(img => {
             img.addEventListener("click", () => modalize(img));
+            setTimeout(() => {
+                if (images.hasOwnProperty(img.src)) {
+                    container.removeChild(img.parentElement);
+                    delete images[img.src];
+                    countImages();
+                }
+            }, retentionPeriod * 1000);
         });
         modal.addEventListener("click", () => {
             modalImg.classList.remove("show");
@@ -146,29 +159,27 @@
                 console.warn("WebSocket connection closed");
             };
             conn.onmessage = function (evt) {
-                const msg = evt.data
-                const type = msg.split(":")[0];
-                const img = msg.substring(type.length + 1);
-                console.info("Event:", type, "=>", img);
-                const alreadyLoaded = images.includes(img);
-                switch (type) {
+                const msg = evt.data;
+                const event = JSON.parse(msg);
+                // console.info("Data update:", event);
+                const img = event["event_obj"];
+                const alreadyLoaded = images.hasOwnProperty(img);
+                switch (event["event_type"]) {
                     case "ADD":
                         if (alreadyLoaded) {
-                            document.querySelector(`img[src="/image/${img}"]`).src = `/image/${img}?time=${Date.now()}`;
-                        } else {
-                            addNewImg(img);
+                            container.removeChild(document.querySelector(`img[src="/image/${img}"]`).parentElement);
                         }
+                        addNewImg(img, event["event_date"]);
                         break;
                     case "REMOVE":
                         if (alreadyLoaded) {
-                            document.body.removeChild(document.querySelector(`img[src="/image/${img}"]`).parentElement);
-                            // remove from images list
-                            images.splice(images.indexOf(img), 1);
+                            container.removeChild(document.querySelector(`img[src="/image/${img}"]`).parentElement);
+                            delete images[img];
                             countImages();
                         }
                         break;
                     default:
-                        console.warn("Unknown event type:", type);
+                        console.warn("Unknown event type:", event["event_type"]);
                         break;
                 }
             };

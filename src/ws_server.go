@@ -61,7 +61,8 @@ func (h *Hub) run(eventChan <-chan event) {
 				close(client.send)
 			}
 		case evt := <-eventChan:
-			eventMsg := []byte(evt.String())
+			// eventMsg := []byte(evt.String())
+			eventMsg := evt.Json()
 			for client := range h.clients {
 				select {
 				case client.send <- eventMsg:
@@ -159,8 +160,10 @@ func websocketHandler(w http.ResponseWriter, r *http.Request) {
 		BucketName:             config.S3.BucketName,
 		PrefixName:             config.S3.KeyPrefix,
 		Previews:               getImagesNames(),
+		PreviewsMap:            imagesCache,
 		PreviewFilename:        config.PreviewFilename,
 		ImageTypes:             config.ImageTypes,
+		RetentionPeriod:        config.RetentionPeriod.Seconds(),
 	})
 }
 

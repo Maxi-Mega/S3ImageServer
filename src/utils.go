@@ -16,12 +16,24 @@ const (
 )
 
 type event struct {
-	eventType string
-	eventObj  string
+	EventType string `json:"event_type"`
+	EventObj  string `json:"event_obj"`
+	EventDate string `json:"event_date"`
+}
+
+func (evt event) Json() []byte {
+	data, err := json.Marshal(evt)
+	if err != nil {
+		printError(err, false)
+	}
+	return data
 }
 
 func (evt event) String() string {
-	return evt.eventType + ":" + evt.eventObj
+	if evt.EventType == eventAdd {
+		return evt.EventType + ":" + evt.EventObj + "_" + evt.EventDate
+	}
+	return evt.EventType + ":" + evt.EventObj
 }
 
 func getJustFileName(filePath string) string {
