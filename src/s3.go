@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-func getFileFromBucket(minioClient *minio.Client, objKey, formattedKey string, lastModTime time.Time, eventChan chan event) error {
+func getFileFromBucket(minioClient *minio.Client, objKey, formattedKey string, lastModTime time.Time, eventChan chan event, updateOnly bool) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	filePath := path.Join(config.CacheDir, formattedKey)
@@ -18,12 +18,22 @@ func getFileFromBucket(minioClient *minio.Client, objKey, formattedKey string, l
 	if err != nil {
 		return err
 	}
-	time.AfterFunc(config.RetentionPeriod, func() {
+	if updateOnly {
+		eventChan <- event{EventType: eventUpdate, EventObj: formattedKey, EventDate: lastModTime.String()}
+	} else {
+		eventChan <- event{EventType: eventAdd, EventObj: formattedKey, EventDate: lastModTime.String()}
+	}
+	imageId := formattedKey // getImageId(formattedKey, lastModTime)
+	if timer, found := timers[imageId]; found {
+		timer.Stop()
+	}
+	timers[imageId] = time.AfterFunc(config.RetentionPeriod, func() {
 		delete(imagesCache, formattedKey)
 		deleteImageFromCache(formattedKey)
-		if !config.PollingMode && eventChan != nil {
-			eventChan <- event{eventType: eventRemove, eventObj: formattedKey}
+		if eventChan != nil {
+			eventChan <- event{EventType: eventRemove, EventObj: formattedKey}
 		}
+		delete(timers, imageId)
 	})
 	return os.Chtimes(filePath, lastModTime, lastModTime)
 }
@@ -36,16 +46,17 @@ func deleteImageFromCache(imgName string) {
 	log("Removed", imgName, "from cache")
 }
 
-func existsInCache(imgName string, obj minio.ObjectInfo) bool {
+func existsInCache(imgName string, obj minio.ObjectInfo) (exists, needsUpdate bool) {
 	if lastModTime, exist := imagesCache[imgName]; exist {
 		if obj.LastModified.Before(lastModTime) || obj.LastModified.Equal(lastModTime) {
-			return true
+			return true, false
 		}
 		log("Found updated image:", fmt.Sprintf("%s (%.3fMB)", obj.Key, float64(obj.Size)/1e6))
+		return true, true
 	} else {
 		log("Found new image:", fmt.Sprintf("%s (%.3fMB)", obj.Key, float64(obj.Size)/1e6))
 	}
-	return false
+	return false, false
 }
 
 func listFullProductImages(minioClient *minio.Client, dirs []string) {
@@ -93,12 +104,14 @@ func extractFilesFromBucket(minioClient *minio.Client, eventChan chan event) err
 
 		formattedName := formatImgName(obj.Key)
 
-		alreadyInCache := existsInCache(formattedName, obj)
+		alreadyInCache, needsUpdate := existsInCache(formattedName, obj)
 		if alreadyInCache {
-			continue
+			if imagesCache[formattedName] == obj.LastModified {
+				continue
+			}
 		}
 
-		err := getFileFromBucket(minioClient, obj.Key, formattedName, obj.LastModified, eventChan)
+		err := getFileFromBucket(minioClient, obj.Key, formattedName, obj.LastModified, eventChan, needsUpdate)
 		if err != nil {
 			return err
 		}
@@ -110,16 +123,17 @@ func extractFilesFromBucket(minioClient *minio.Client, eventChan chan event) err
 	return nil
 }
 
-func pollBucket(minioClient *minio.Client) {
+func pollBucket(minioClient *minio.Client, eventChan chan event) {
 	go func() {
 		for {
 			time.Sleep(config.PollingPeriod)
-			err := extractFilesFromBucket(minioClient, nil)
+			err := extractFilesFromBucket(minioClient, eventChan)
 			if err != nil {
 				printError(err, false)
 			}
 		}
 	}()
+	fmt.Println("Started polling")
 }
 
 func listenToBucket(minioClient *minio.Client, eventChan chan event) {
@@ -144,18 +158,19 @@ func listenToBucket(minioClient *minio.Client, eventChan chan event) {
 					formattedName := formatImgName(objKey)
 					if strings.HasPrefix(e.EventName, "s3:ObjectCreated") {
 						log("[Created]:", objKey)
-						err := getFileFromBucket(minioClient, objKey, formattedName, time.Now(), eventChan)
+						err := getFileFromBucket(minioClient, objKey, formattedName, time.Now(), eventChan, false)
 						if err != nil {
 							printError(err, false)
 							continue
 						}
+						// TODO: list full product images
 						imagesCache[formattedName] = time.Now()
-						eventChan <- event{eventType: eventAdd, eventObj: formattedName}
+						eventChan <- event{EventType: eventAdd, EventObj: formattedName, EventDate: time.Now().String()}
 					} else if strings.HasPrefix(e.EventName, "s3:ObjectRemoved") {
 						log("[Removed]:", objKey)
 						deleteImageFromCache(formattedName)
 						delete(imagesCache, formattedName)
-						eventChan <- event{eventType: eventRemove, eventObj: formattedName}
+						eventChan <- event{EventType: eventRemove, EventObj: formattedName}
 					}
 				}
 			}

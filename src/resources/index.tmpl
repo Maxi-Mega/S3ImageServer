@@ -1,11 +1,8 @@
 {{template "html_body" .}}
 <script>
-    let images = {{.Previews}} ||
-    [];
-    const previewFilename = {{.PreviewFilename}} ||
-    "";
-    const prefixName = {{.PrefixName}} ||
-    "";
+    let images = {{.PreviewsMap}};
+    const previewFilename = {{.PreviewFilename}};
+    const prefixName = {{.PrefixName}};
     const retentionPeriod = {{.RetentionPeriod}}; // in seconds
     const refreshPeriod = {{.PollingPeriod}}; // in seconds
 
@@ -88,14 +85,14 @@
         // document.body.appendChild(newDiv);
         container.insertBefore(newDiv, container.firstChild);
         if (addToList) {
-            images.push(img);
+            // images.push(img); TODO
         }
         countImages();
         setTimeout(() => {
             if (container.contains(newDiv)) {
                 container.removeChild(newDiv);
                 // remove from images list
-                images.splice(images.indexOf(img), 1);
+                // images.splice(images.indexOf(img), 1); TODO
                 countImages();
             }
         }, retentionPeriod * 1000);
@@ -130,7 +127,8 @@
             setTimeout(() => {
                 container.removeChild(img.parentElement);
                 // remove from images list
-                images.splice(images.indexOf(img.alt), 1);
+                // images.splice(images.indexOf(img.alt), 1); TODO
+                delete images[img.src]; // done
                 countImages();
             }, retentionPeriod * 1000);
         });
@@ -195,7 +193,9 @@
                 request.send();
             }).then(result => {
                 const lastestImages = result.data;
-                const sameImages = arrArraysEquals(lastestImages, images);
+                console.info("New images:", lastestImages);
+                images = lastestImages;
+                /*const sameImages = arrArraysEquals(lastestImages, images);
                 if (!sameImages) {
                     container.querySelectorAll("div.img-container").forEach(e => container.removeChild(e));
                     countImages();
@@ -204,13 +204,7 @@
                         console.info("Found new image:", images[i]);
                         addNewImg(images[i], false);
                     }
-                }
-                /*lastestImages.forEach(img => {
-                    if (!images.includes(img)) {
-                        console.info("Found new image:", img);
-                        addNewImg(img);
-                    }
-                });*/
+                }*/
             }).catch(reason => {
                 console.warn(reason);
             });

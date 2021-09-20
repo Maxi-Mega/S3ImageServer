@@ -1,4 +1,4 @@
-# S3ImageServer [V1.4.6]
+# S3ImageServer [V1.5.1]
 ### Browse images from S3 bucket
 
 ## Starting the server
@@ -17,7 +17,11 @@ s3:
   accessSecret: "password"
   useSSL: false                 # Not tested
 
+windowTitle: "S3 Image Viewer"
+scaleInitialPercentage: 50
 previewFilename: "preview.jpg"
+fullProductExtension: "tif"
+fullProductProtocol: "protocol"
 imageTypes:
   - "TYPE1"
   - "TYPE2"

@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/fs"
 	"net/http"
 	"os"
@@ -12,21 +13,45 @@ import (
 
 const (
 	eventAdd    = "ADD"
+	eventUpdate = "UPDATE"
 	eventRemove = "REMOVE"
 )
 
 type event struct {
-	eventType string
-	eventObj  string
+	EventType string `json:"event_type"`
+	EventObj  string `json:"event_obj"`
+	EventDate string `json:"event_date"`
+}
+
+func (evt event) Json() []byte {
+	data, err := json.Marshal(evt)
+	if err != nil {
+		printError(err, false)
+	}
+	return data
 }
 
 func (evt event) String() string {
-	return evt.eventType + ":" + evt.eventObj
+	switch evt.EventType {
+	case eventAdd:
+		return evt.EventType + ":" + evt.EventObj + "_" + evt.EventDate
+	case eventUpdate:
+		return evt.EventType + ":" + evt.EventObj + "_" + evt.EventDate
+	case eventRemove:
+		return evt.EventType + ":" + evt.EventObj
+	default:
+		fmt.Println("Unknown event type:", evt.EventType)
+		return "ERROR"
+	}
 }
 
 func getJustFileName(filePath string) string {
 	// return strings.TrimPrefix(strings.TrimPrefix(filePath, filepath.Dir(filePath)), "/")
 	return filepath.Base(filePath)
+}
+
+func getImageId(name string, date time.Time) string {
+	return name + "_" + date.Format(time.RFC3339)
 }
 
 func formatImgName(imgPath string) string {

@@ -7,16 +7,18 @@ import (
 	"github.com/minio/minio-go"
 	"github.com/minio/minio-go/pkg/credentials"
 	"os"
+	"sync"
 	"time"
 )
 
-const version = "1.4.6"
+const version = "1.5.1"
 
 const defaultTempDirName = "s3_image_server"
 
 var config Config
 
 var imagesCache map[string]time.Time
+var timers map[string]*time.Timer
 var fullProductLinksCache map[string][]string
 
 // --config config.yml
@@ -86,6 +88,21 @@ func main() {
 	}
 
 	eventChan := make(chan event, 1)
+	timers = map[string]*time.Timer{}
+
+	go func() {
+		if config.PollingMode {
+			pollBucket(minioClient, eventChan)
+			// err = startWebServer(config.WebServerPort)
+			err = startWSServer(config.WebServerPort, eventChan)
+		} else {
+			listenToBucket(minioClient, eventChan)
+			err = startWSServer(config.WebServerPort, eventChan)
+		}
+		if err != nil {
+			exitWithError(err)
+		}
+	}()
 
 	err = extractFilesFromBucket(minioClient, eventChan)
 	if err != nil {
@@ -94,14 +111,7 @@ func main() {
 
 	log("Found images have been stored in", config.CacheDir, "!")
 
-	if config.PollingMode {
-		pollBucket(minioClient)
-		err = startWebServer(config.WebServerPort)
-	} else {
-		listenToBucket(minioClient, eventChan)
-		err = startWSServer(config.WebServerPort, eventChan)
-	}
-	if err != nil {
-		exitWithError(err)
-	}
+	wg := new(sync.WaitGroup)
+	wg.Add(1)
+	wg.Wait()
 }
