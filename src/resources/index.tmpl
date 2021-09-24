@@ -3,6 +3,7 @@
     let images = {{.PreviewsWithTime}};
     const previewFilename = {{.PreviewFilename}};
     const prefixName = {{.PrefixName}};
+    const keyPrefix = {{.KeyPrefix}};
     const imageTypes = {{.ImageTypes}};
     const retentionPeriod = {{.RetentionPeriod}}; // in seconds
     const refreshPeriod = {{.PollingPeriod}}; // in seconds
@@ -15,8 +16,9 @@
     const modalLinks = document.getElementById("modal-links");
 
     function formatTitle(title) {
+        let kPrefix = keyPrefix.length > 0 ? keyPrefix + "@" : "";
         for (const imageType of imageTypes) {
-            if (title.startsWith("PREVIEW@" + imageType)) {
+            if (title.startsWith(kPrefix + imageType)) {
                 title = title.substring(prefixName.length === 0 ? 0 : prefixName.length + 1, title.lastIndexOf("@")).replaceAll("@", "/"); // .replace("/" + previewFilename, "");
                 const imgType = title.substring(0, title.indexOf("/"));
                 const imgName = title.substring(title.lastIndexOf("/") + 1);

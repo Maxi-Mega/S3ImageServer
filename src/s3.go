@@ -48,8 +48,7 @@ func getImageFromBucket(minioClient *minio.Client, objKey, formattedKey string, 
 	return os.Chtimes(filePath, lastModTime, lastModTime)
 }
 
-func getGeonamesFileFromBucket(minioClient *minio.Client, objKey string) error {
-	formattedFilename := formatFileName(objKey)
+func getGeonamesFileFromBucket(minioClient *minio.Client, objKey, formattedFilename string) error {
 	filePath := path.Join(config.CacheDir, formattedFilename)
 	err := getFileFromBucket(minioClient, objKey, filePath)
 	if err != nil {
@@ -99,14 +98,18 @@ func listMetaFiles(minioClient *minio.Client, dirs []string) {
 		tempFullProductLinksCache[dir] = []string{}
 		ctx, cancel := context.WithTimeout(context.Background(), config.PollingPeriod)
 		defer cancel()
-		for obj := range minioClient.ListObjects(ctx, config.S3.BucketName, minio.ListObjectsOptions{Prefix: dir}) {
+		for obj := range minioClient.ListObjects(ctx, config.S3.BucketName, minio.ListObjectsOptions{Prefix: dir, Recursive: true}) {
 			if obj.Err != nil {
 				continue
 			}
 
-			if strings.HasSuffix(obj.Key, config.GeonamesFilename) {
+			if len(config.GeonamesFilename) > 0 && strings.HasSuffix(obj.Key, config.GeonamesFilename) {
+				formattedFilename := formatFileName(dir + config.GeonamesFilename)
+				if _, alreadyInCache := geonamesCache[formattedFilename]; alreadyInCache {
+					continue
+				}
 				log("Found geonames file:", obj.Key)
-				err := getGeonamesFileFromBucket(minioClient, obj.Key)
+				err := getGeonamesFileFromBucket(minioClient, obj.Key, formattedFilename)
 				if err != nil {
 					printError(err, false)
 				}
@@ -125,7 +128,7 @@ func listMetaFiles(minioClient *minio.Client, dirs []string) {
 func extractFilesFromBucket(minioClient *minio.Client, eventChan chan event) error {
 	// log(fmt.Sprintf("Looking for images in bucket [%s] ...", config.S3.BucketName))
 	previewBaseDirs := []string{}
-	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
 	defer cancel()
 	for obj := range minioClient.ListObjects(ctx, config.S3.BucketName, minio.ListObjectsOptions{Prefix: config.S3.KeyPrefix, Recursive: true}) {
 		if obj.Err != nil {
