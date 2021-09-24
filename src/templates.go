@@ -16,7 +16,9 @@ var indexTemplate string
 var indexWSTemplate string
 
 func getIndexTemplate() (*template.Template, error) {
-	tmpl, err := template.New("index").Parse(indexTemplate)
+	tmpl, err := template.New("index").Funcs(template.FuncMap{
+		"getGeoname": getGeoname,
+	}).Parse(indexTemplate)
 	if err != nil {
 		return nil, errors.New("Failed to parse index template: " + err.Error())
 	}
@@ -28,7 +30,9 @@ func getIndexTemplate() (*template.Template, error) {
 }
 
 func getIndexWsTemplate() (*template.Template, error) {
-	tmpl, err := template.New("index").Parse(indexWSTemplate)
+	tmpl, err := template.New("index").Funcs(template.FuncMap{
+		"getGeoname": getGeoname,
+	}).Parse(indexWSTemplate)
 	if err != nil {
 		return nil, errors.New("Failed to parse index WS template: " + err.Error())
 	}

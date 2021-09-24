@@ -18,8 +18,8 @@ type templateData struct {
 	ScaleInitialPercentage uint8
 	BucketName             string
 	PrefixName             string
-	Previews               []string
-	PreviewsMap            map[string]time.Time
+	Previews               []EventObject
+	PreviewsWithTime       map[string]time.Time
 	PreviewFilename        string
 	ImageTypes             []string
 	RetentionPeriod        float64
@@ -64,8 +64,8 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		ScaleInitialPercentage: config.ScaleInitialPercentage,
 		BucketName:             config.S3.BucketName,
 		PrefixName:             config.S3.KeyPrefix,
-		Previews:               getImagesNames(),
-		PreviewsMap:            imagesCache,
+		Previews:               getImagesList(),
+		PreviewsWithTime:       imagesCache,
 		PreviewFilename:        config.PreviewFilename,
 		ImageTypes:             config.ImageTypes,
 		RetentionPeriod:        config.RetentionPeriod.Seconds(),
@@ -107,14 +107,20 @@ func infosHandler(w http.ResponseWriter, r *http.Request) {
 		strDate = "N/A"
 	}
 	imgDir := strings.TrimSuffix(imgName, config.PreviewFilename)
-	imgDir = strings.ReplaceAll(imgDir, "@", string(os.PathSeparator))
-	links, found := fullProductLinksCache[imgDir]
+	imgFormattedName := strings.ReplaceAll(imgDir, "@", string(os.PathSeparator))
+	links, found := fullProductLinksCache[imgFormattedName]
 	if !found {
 		links = []string{}
 	}
+	geonames, found := geonamesCache[imgDir+config.GeonamesFilename]
+	if !found {
+		fmt.Println("Not found:", imgDir+config.GeonamesFilename)
+		geonames = Geonames{}
+	}
 	prettier(w, "Image infos", ImageInfos{
-		Date:  strDate,
-		Links: links,
+		Date:     strDate,
+		Links:    links,
+		Geonames: geonames.format(),
 	}, http.StatusOK)
 }
 

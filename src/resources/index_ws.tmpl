@@ -1,8 +1,9 @@
 {{template "html_body" .}}
 <script>
-    const images = {{.PreviewsMap}};
+    const images = {{.PreviewsWithTime}};
     const previewFilename = {{.PreviewFilename}};
     const prefixName = {{.PrefixName}};
+    const imageTypes = {{.ImageTypes}};
     const retentionPeriod = {{.RetentionPeriod}}; // in seconds
     const refreshPeriod = {{.PollingPeriod}}; // in seconds
 
@@ -11,13 +12,19 @@
     const container = document.querySelector("div.container");
     const modal = document.getElementById("modal");
     const modalImg = document.getElementById("modal-img");
+
     const modalLinks = document.getElementById("modal-links");
 
     function formatTitle(title) {
-        title = title.substring(prefixName.length === 0 ? 0 : prefixName.length + 1, title.lastIndexOf("@")).replaceAll("@", "/"); // .replace("/" + previewFilename, "");
-        const imgType = title.substring(0, title.indexOf("/"));
-        const imgName = title.substring(title.lastIndexOf("/") + 1);
-        return imgType + "\n" + imgName;
+        for (const imageType of imageTypes) {
+            if (title.startsWith("PREVIEW@" + imageType)) {
+                title = title.substring(prefixName.length === 0 ? 0 : prefixName.length + 1, title.lastIndexOf("@")).replaceAll("@", "/"); // .replace("/" + previewFilename, "");
+                const imgType = title.substring(0, title.indexOf("/"));
+                const imgName = title.substring(title.lastIndexOf("/") + 1);
+                return imgType + "\n" + imgName;
+            }
+        }
+        return title;
     }
 
     function modalize(img) {
@@ -36,6 +43,7 @@
                     li.appendChild(a);
                     modalLinks.appendChild(li);
                 }
+                document.getElementById("geonames").innerText = jsonData["geonames"];
             }).catch(reason => {
                 console.warn("Failed to jsonify links:", reason);
             });
@@ -46,32 +54,36 @@
         modalImg.src = img.src;
         modalImg.alt = img.alt;
         const parentDiv = img.parentElement;
+        let imgName = formatTitle(parentDiv.getAttribute("img-name"));
+        if (imageTypes.includes(imgName.substring(0, imgName.indexOf("\n")))) {
+            imgName = imgName.substring(imgName.indexOf("\n") + 1);
+        }
         document.getElementById("modal-img-type").innerText = "Type: " + parentDiv.getAttribute("img-type");
-        document.getElementById("modal-img-name").innerText = "Name: " + parentDiv.getAttribute("img-name");
+        document.getElementById("modal-img-name").innerText = "Name: " + imgName;
         modal.style.display = "flex";
     }
 
     function addNewImg(img, date, addToList = true) {
         const newImg = document.createElement("img");
-        newImg.src = "/image/" + img + "?time=" + Date.now();
-        newImg.alt = img;
+        newImg.src = "/image/" + img["img_key"] + "?time=" + Date.now();
+        newImg.alt = img["img_key"];
         newImg.style.maxWidth = currentImgWidth;
         newImg.addEventListener("click", () => modalize(newImg));
         const newA = document.createElement("a");
         newA.classList.add("img-title");
-        newA.href = "/image/" + img;
+        newA.href = "/image/" + img["img_key"];
         newA.target = "_blank";
         newA.title = "Click to open the image in a new tab";
         newA.style.fontSize = currentFontSize;
-        const imgTitle = formatTitle(img);
+        const imgTitle = formatTitle(img["img_name"]);
         newA.innerText = imgTitle;
         const newDiv = document.createElement("div");
         newDiv.classList.add("img-container");
         newDiv.appendChild(newImg);
         newDiv.appendChild(newA);
-        const imgType = img.substring(prefixName.length === 0 ? 0 : prefixName.length + 1).split("@")[0];
+        const imgType = img["img_type"]; // img.substring(prefixName.length === 0 ? 0 : prefixName.length + 1).split("@")[0];
         newDiv.setAttribute("img-type", imgType);
-        newDiv.setAttribute("img-name", imgTitle.substring(imgTitle.indexOf("\n") + 1));
+        newDiv.setAttribute("img-name", imgTitle); // imgTitle.substring(imgTitle.indexOf("\n") + 1)
         if (inputs.hasOwnProperty(imgType)) {
             if (!inputs[imgType].checked) {
                 newDiv.classList.add("filter-hidden");
@@ -98,11 +110,10 @@
     }
 
     document.addEventListener("DOMContentLoaded", () => {
-        document.querySelectorAll(".img-title").forEach(p => {
-            const imgTitle = formatTitle(p.innerText);
-            p.innerText = imgTitle;
-            p.parentElement.setAttribute("img-type", p.innerText.split("\n")[0]);
-            p.parentElement.setAttribute("img-name", imgTitle.substring(imgTitle.indexOf("\n") + 1));
+        document.querySelectorAll(".img-title").forEach(a => {
+            a.innerText = formatTitle(a.innerText);
+            /*a.parentElement.setAttribute("img-type", a.innerText.split("\n")[0]);
+            a.parentElement.setAttribute("img-name", imgTitle.substring(imgTitle.indexOf("\n") + 1));*/
         });
         document.querySelectorAll("img:not(#modal-img)").forEach(img => {
             img.addEventListener("click", () => modalize(img));
@@ -163,19 +174,19 @@
                 const event = JSON.parse(msg);
                 // console.info("Data update:", event);
                 const img = event["event_obj"];
-                const alreadyLoaded = images.hasOwnProperty(img);
+                const alreadyLoaded = images.hasOwnProperty(img["img_key"]);
                 switch (event["event_type"]) {
                     case "ADD":
                     case "UPDATE":
                         if (alreadyLoaded) {
-                            container.removeChild(document.querySelector(`img[src*="/image/${img}"]`).parentElement);
+                            container.removeChild(document.querySelector(`img[src*="/image/${img["img_key"]}"]`).parentElement);
                         }
                         addNewImg(img, event["event_date"]);
                         break;
                     case "REMOVE":
                         if (alreadyLoaded) {
-                            container.removeChild(document.querySelector(`img[src*="/image/${img}"]`).parentElement);
-                            delete images[img];
+                            container.removeChild(document.querySelector(`img[src*="/image/${img["img_key"]}"]`).parentElement);
+                            delete images[img["img_key"]];
                             countImages();
                         }
                         break;

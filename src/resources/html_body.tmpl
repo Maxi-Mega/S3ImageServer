@@ -67,8 +67,7 @@
             }
 
             .img-container {
-                /*width: 33%;
-                max-width: 33%;*/
+                width: min-content;
                 height: auto;
                 margin: 20px 10px;
                 display: grid;
@@ -78,11 +77,7 @@
                 /*transition: all ease-in-out 1s;*/
             }
 
-            .filter-hidden {
-                display: none;
-            }
-
-            .search-hidden {
+            .filter-hidden, .search-hidden {
                 display: none;
             }
 
@@ -151,9 +146,13 @@
                 color: white;
             }
 
+            #geonames {
+                margin-top: 0;
+            }
+
             #modal-details h3 {
-                margin: 10px 0;
-                font-size: 15px; /* TODO */
+                margin: 5px 0;
+                font-size: 13px;
                 font-weight: normal;
             }
 
@@ -170,7 +169,8 @@
 
             #modal-links li {
                 list-style-type: none;
-                margin: 10px 0;
+                margin: 5px 0;
+                font-size: 13px;
             }
 
             #modal-content a {
@@ -212,11 +212,11 @@
     </header>
     <div class="container">
         {{range .Previews}}
-            <div class="img-container">
-                <img src="/image/{{.}}" alt="{{.}}"/>
+            <div class="img-container" img-type="{{.ImgType}}" img-name="{{.ImgKey}}">
+                <img src="/image/{{.ImgKey}}" alt="{{.ImgKey}}"/>
                 <br/>
-                <a class="img-title" href="/image/{{.}}" target="_blank"
-                   title="Click to open the image in a new tab">{{.}}</a>
+                <a class="img-title" href="/image/{{.ImgKey}}" target="_blank"
+                   title="Click to open the image in a new tab">{{.ImgName}}</a>
             </div>
         {{end}}
     </div>
@@ -224,6 +224,8 @@
         <div id="modal-content">
             <img id="modal-img" src="" alt=""/>
             <div id="modal-details">
+                <pre id="geonames"></pre>
+                <hr/>
                 <h3 id="modal-img-type"></h3>
                 <h3 id="modal-img-name"></h3>
                 <h3 id="modal-img-date"></h3>
@@ -250,7 +252,7 @@
             const imgWidth = (40 - scaler.value) + "vw";
             currentImgWidth = imgWidth;
             document.querySelectorAll("img:not(#modal-img)").forEach(img => img.style.maxWidth = imgWidth);
-            const fontSize = Math.round(13 - scaler.value / 5) + "px";
+            const fontSize = Math.round(14 - scaler.value / 10) + "px";
             currentFontSize = fontSize;
             document.querySelectorAll("a.img-title").forEach(title => title.style.fontSize = fontSize);
         }

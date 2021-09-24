@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-const version = "1.5.1"
+const version = "1.6.0"
 
 const defaultTempDirName = "s3_image_server"
 
@@ -19,6 +19,7 @@ var config Config
 
 var imagesCache map[string]time.Time
 var timers map[string]*time.Timer
+var geonamesCache map[string]Geonames
 var fullProductLinksCache map[string][]string
 
 // --config config.yml
@@ -89,6 +90,7 @@ func main() {
 
 	eventChan := make(chan event, 1)
 	timers = map[string]*time.Timer{}
+	geonamesCache = map[string]Geonames{}
 
 	go func() {
 		if config.PollingMode {

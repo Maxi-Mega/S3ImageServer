@@ -32,6 +32,7 @@ type Config struct {
 	WindowTitle            string   `yaml:"windowTitle"`
 	ScaleInitialPercentage uint8    `yaml:"scaleInitialPercentage"`
 	PreviewFilename        string   `yaml:"previewFilename"`
+	GeonamesFilename       string   `yaml:"geonamesFilename"`
 	FullProductExtension   string   `yaml:"fullProductExtension"`
 	FullProductProtocol    string   `yaml:"fullProductProtocol"`
 	ImageTypes             []string `yaml:"imageTypes"`
@@ -124,11 +125,11 @@ func (config *Config) checkValidity() (bool, []string) {
 	return len(errs) == 0, errs
 }
 
-func loadConfigFromFile(filepath string) (Config, error) {
-	fileContent, err := os.ReadFile(filepath)
+func loadConfigFromFile(filePath string) (Config, error) {
+	fileContent, err := os.ReadFile(filePath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return Config{}, fmt.Errorf("file %q not found", filepath)
+			return Config{}, fmt.Errorf("file %q not found", filePath)
 		}
 		return Config{}, err
 	}
@@ -160,6 +161,7 @@ func (config Config) String() string {
 	result += "windowTitle: " + config.WindowTitle + "\n"
 	result += "scaleInitialPercentage: " + strconv.FormatUint(uint64(config.ScaleInitialPercentage), 10) + "\n"
 	result += "previewFilename: " + config.PreviewFilename + "\n"
+	result += "geonamesFilename: " + config.GeonamesFilename + "\n"
 	result += "fullProductExtension: " + config.FullProductExtension + "\n"
 	result += "fullProductProtocol: " + config.FullProductProtocol + "\n"
 	result += "imageTypes: " + strings.Join(config.ImageTypes, ", ") + "\n"
