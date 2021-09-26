@@ -51,6 +51,7 @@ func executeTemplate(w http.ResponseWriter, tmpl *template.Template, data interf
 func indexHandler(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/" {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
+		http.NotFound(w, r)
 		return
 	}
 	deleteCookies(w, r)
