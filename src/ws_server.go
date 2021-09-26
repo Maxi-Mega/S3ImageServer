@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/gorilla/websocket"
 	"net/http"
-	"net/url"
 	"strconv"
 	"time"
 )
@@ -24,17 +23,7 @@ var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
 	CheckOrigin: func(r *http.Request) bool {
-		origin := r.Header["Origin"]
-		if len(origin) == 0 {
-			return true
-		}
-		u, err := url.Parse(origin[0])
-		if err != nil {
-			return false
-		}
-		fmt.Println(u.Host, r.Host)
-		// return strings.EqualFold(u.Host, r.Host)
-		return true // TODO
+		return true
 	},
 }
 
