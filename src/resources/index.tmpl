@@ -44,7 +44,19 @@
                     li.appendChild(a);
                     modalLinks.appendChild(li);
                 }
+                if (jsonData["links"].length > 0) {
+                    document.getElementById("modal-links-title").style.display = "block";
+                } else {
+                    document.getElementById("modal-links-title").style.display = "none";
+                }
                 document.getElementById("geonames").innerText = jsonData["geonames"];
+                if (jsonData["geonames"].length > 0) {
+                    document.getElementById("geonames-title").style.display = "block";
+                    document.getElementById("geonames").style.display = "block";
+                } else {
+                    document.getElementById("geonames-title").style.display = "none";
+                    document.getElementById("geonames").style.display = "none";
+                }
             }).catch(reason => {
                 console.warn("Failed to jsonify links:", reason);
             });

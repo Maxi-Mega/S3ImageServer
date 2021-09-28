@@ -16,6 +16,9 @@ type Geonames []struct {
 			Cities []struct {
 				Name string `json:"name"`
 			} `json:"cities"`
+			Villages []struct {
+				Name string `json:"name"`
+			} `json:"villages"`
 		} `json:"counties"`
 	} `json:"states"`
 }
@@ -42,6 +45,11 @@ func (geonames Geonames) format() string {
 						if county.Cities != nil {
 							for _, city := range county.Cities {
 								final += "      " + city.Name + "\n"
+							}
+						}
+						if county.Villages != nil {
+							for _, village := range county.Villages {
+								final += "        " + village.Name + "\n"
 							}
 						}
 					}

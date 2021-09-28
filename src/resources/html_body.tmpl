@@ -142,15 +142,26 @@
                 display: flex;
                 flex-flow: column wrap;
                 padding: 20px;
-                background-color: rgba(0, 0, 0, 0.9);
+                background-color: black;
                 color: white;
             }
 
             #geonames {
                 margin-top: 0;
+                margin-bottom: 20px;
                 font-size: 13px;
+                min-height: 150px;
                 max-height: 207px;
-                overflow-y: scroll;
+                overflow-x: clip;
+                overflow-y: auto;
+            }
+
+            #modal-details h2 {
+                max-width: max-content;
+                margin-top: 0;
+                margin-left: 50%;
+                transform: translateX(-50%);
+                font-size: 17px;
             }
 
             #modal-details h3 {
@@ -162,6 +173,10 @@
             #modal-details hr {
                 border-bottom: 0;
                 width: 50%;
+            }
+
+            #modal-links-title {
+                margin-top: 10px;
             }
 
             #modal-links {
@@ -227,12 +242,13 @@
         <div id="modal-content">
             <img id="modal-img" src="" alt=""/>
             <div id="modal-details">
+                <h2 id="geonames-title">Locations</h2>
                 <pre id="geonames"></pre>
-                <hr/>
+                <h2>Characteristics</h2>
                 <h3 id="modal-img-type"></h3>
                 <h3 id="modal-img-name"></h3>
                 <h3 id="modal-img-date"></h3>
-                <hr/>
+                <h2 id="modal-links-title">Contents</h2>
                 <ul id="modal-links" title="Click to open with external application">
                     <li>
                         <a href=""></a>

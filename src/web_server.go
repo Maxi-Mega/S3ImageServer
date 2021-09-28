@@ -117,7 +117,6 @@ func infosHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	geonames, found := geonamesCache[imgDir+config.GeonamesFilename]
 	if !found {
-		fmt.Println("Not found:", imgDir+config.GeonamesFilename)
 		geonames = Geonames{}
 	}
 	prettier(w, "Image infos", ImageInfos{
