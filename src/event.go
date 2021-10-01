@@ -9,6 +9,8 @@ const (
 	eventAdd    = "ADD"
 	eventUpdate = "UPDATE"
 	eventRemove = "REMOVE"
+
+	eventGeonames = "GEONAMES"
 )
 
 type EventObject struct {
@@ -17,9 +19,14 @@ type EventObject struct {
 	ImgName string `json:"img_name"`
 }
 
+type EventGeonames struct {
+	ImgKey   string `json:"img_key"`
+	Geonames string `json:"geonames"`
+}
+
 type event struct {
 	EventType string      `json:"event_type"`
-	EventObj  EventObject `json:"event_obj"`
+	EventObj  interface{} `json:"event_obj"`
 	EventDate string      `json:"event_date"`
 }
 
@@ -34,13 +41,15 @@ func (evt event) Json() []byte {
 func (evt event) String() string {
 	switch evt.EventType {
 	case eventAdd:
-		return evt.EventType + ":" + evt.EventObj.ImgKey + "_" + evt.EventDate
+		return evt.EventType + ":" + evt.EventObj.(EventObject).ImgKey + "_" + evt.EventDate
 	case eventUpdate:
-		return evt.EventType + ":" + evt.EventObj.ImgKey + "_" + evt.EventDate
+		return evt.EventType + ":" + evt.EventObj.(EventObject).ImgKey + "_" + evt.EventDate
 	case eventRemove:
-		return evt.EventType + ":" + evt.EventObj.ImgKey
+		return evt.EventType + ":" + evt.EventObj.(EventObject).ImgKey
+	case eventGeonames:
+		return evt.EventType + ":" + evt.EventObj.(EventGeonames).ImgKey
 	default:
-		fmt.Println("Unknown event type:", evt.EventType)
-		return "ERROR"
+		fmt.Println("[event String()] Unknown event type:", evt.EventType)
+		return "Unknown event type:" + evt.EventType
 	}
 }

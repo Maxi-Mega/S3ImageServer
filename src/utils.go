@@ -31,36 +31,8 @@ func formatFileName(imgPath string) string {
 
 func getImagesList() []EventObject {
 	images := []EventObject{}
-	/*timeMap := map[string]time.Time{}
-	err := filepath.WalkDir(config.CacheDir, func(imagePath string, file fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		if file.IsDir() {
-			return nil
-		}
-		info, err := file.Info()
-		if err != nil {
-			return err
-		}
-		fileName := getJustFileName(imagePath)
-		timeMap[fileName] = info.ModTime()
-		images = append(images, fileName)
-		// if strings.HasSuffix(imagePath, ".jpg") {
-		// 	images = append(images, getJustFileName(imagePath))
-		// }
-		return nil
-	})
-	if err != nil {
-		printError(err, false)
-	}
-	startTime := time.Now()
-	sort.Slice(images, func(i, j int) bool {
-		return timeMap[images[i]].Before(timeMap[images[j]]) // sort according to modification time
-	})
-	fmt.Println("Sorted images in", time.Since(startTime), "!")*/
 
-ImagesCacheLoop:
+imagesCacheLoop:
 	for imgToDo, dateToDo := range imagesCache {
 		imgToDoObj := EventObject{
 			ImgType: getImageType(imgToDo),
@@ -71,7 +43,7 @@ ImagesCacheLoop:
 		for i, imgDone := range images {
 			if dateToDo.After(imagesCache[imgDone.ImgKey]) {
 				images = append(images[:i], append([]EventObject{imgToDoObj}, images[i:]...)...) // insert new img at the right position
-				continue ImagesCacheLoop
+				continue imagesCacheLoop
 			}
 		}
 

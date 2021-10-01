@@ -122,28 +122,22 @@
                 justify-content: space-between;
             }
 
-            #modal-img {
-                z-index: 1000;
-                /* position: fixed;
-                 width: auto;
-                 max-height: 99vh;
-                 top: 50%;
-                 left: 50%;
-                 transform: translate(-50%, -50%);
-                 animation: none;*/
-            }
-
             #modal-img.show {
+                z-index: 1000;
+                border: 2px solid white;
                 max-width: 80vw;
                 max-height: 80vh;
+                margin-right: 10px;
             }
 
             #modal-details {
                 display: flex;
                 flex-flow: column wrap;
                 padding: 20px;
-                background-color: black;
-                color: white;
+                margin-left: 10px;
+                background-color: #959595;
+                color: black;
+                border: 2px solid white;
             }
 
             #geonames {
@@ -154,6 +148,7 @@
                 max-height: 207px;
                 overflow-x: clip;
                 overflow-y: auto;
+                background-color: #bbb;
             }
 
             #modal-details h2 {
@@ -176,7 +171,7 @@
             }
 
             #modal-links-title {
-                margin-top: 10px;
+                margin-top: 10px !important;
             }
 
             #modal-links {
@@ -188,11 +183,11 @@
             #modal-links li {
                 list-style-type: none;
                 margin: 5px 0;
-                font-size: 13px;
+                font-size: 14px;
             }
 
             #modal-content a {
-                color: white;
+                color: black;
             }
 
             @keyframes fadein {
@@ -242,7 +237,7 @@
         <div id="modal-content">
             <img id="modal-img" src="" alt=""/>
             <div id="modal-details">
-                <h2 id="geonames-title">Locations</h2>
+                <h2 id="geonames-title">Place names</h2>
                 <pre id="geonames"></pre>
                 <h2>Characteristics</h2>
                 <h3 id="modal-img-type"></h3>

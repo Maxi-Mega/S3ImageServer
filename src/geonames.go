@@ -79,12 +79,10 @@ func parseGeonames(filePath string) (Geonames, error) {
 	return geonames, nil
 }
 
-func getGeoname(imgName string) string {
-	geonamesFilename := strings.TrimSuffix(imgName, config.PreviewFilename) + config.GeonamesFilename
-	geoname, found := geonamesCache[geonamesFilename]
-	if found && len(geoname) > 0 {
-		name := geoname[0].Name
-		states := geoname[0].States
+func getGeonamesTopLevel(geonames Geonames) string {
+	if len(geonames) > 0 {
+		name := geonames[0].Name
+		states := geonames[0].States
 		if states != nil && len(states) > 0 {
 			name += " / " + states[0].Name
 			counties := states[0].Counties
@@ -93,10 +91,19 @@ func getGeoname(imgName string) string {
 				cities := counties[0].Cities
 				if cities != nil && len(cities) > 0 {
 					name += " / " + cities[0].Name
-				}
+				} // TODO: villages ?
 			}
 		}
 		return name
+	}
+	return "no geoname found"
+}
+
+func getGeoname(imgName string) string {
+	geonamesFilename := strings.TrimSuffix(imgName, config.PreviewFilename) + config.GeonamesFilename
+	geoname, found := geonamesCache[geonamesFilename]
+	if found && len(geoname) > 0 {
+		return getGeonamesTopLevel(geoname)
 	}
 	return imgName
 }

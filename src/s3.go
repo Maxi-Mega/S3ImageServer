@@ -20,7 +20,8 @@ func getImageFromBucket(minioClient *minio.Client, objKey, formattedKey string, 
 	filePath := path.Join(config.CacheDir, formattedKey)
 	err := getFileFromBucket(minioClient, objKey, filePath)
 	if err != nil {
-		return err
+		printError(err, false)
+		return nil
 	}
 	if eventChan != nil {
 		if updateOnly {
@@ -48,7 +49,7 @@ func getImageFromBucket(minioClient *minio.Client, objKey, formattedKey string, 
 	return os.Chtimes(filePath, lastModTime, lastModTime)
 }
 
-func getGeonamesFileFromBucket(minioClient *minio.Client, objKey, formattedFilename string) error {
+func getGeonamesFileFromBucket(minioClient *minio.Client, objKey, formattedFilename, targetImg string, eventChan chan event) error {
 	filePath := path.Join(config.CacheDir, formattedFilename)
 	err := getFileFromBucket(minioClient, objKey, filePath)
 	if err != nil {
@@ -67,6 +68,14 @@ func getGeonamesFileFromBucket(minioClient *minio.Client, objKey, formattedFilen
 		deleteFileFromCache(formattedFilename)
 		delete(timers, formattedFilename)
 	})
+	eventChan <- event{
+		EventType: eventGeonames,
+		EventObj: EventGeonames{
+			ImgKey:   targetImg,
+			Geonames: getGeonamesTopLevel(geonames),
+		},
+		EventDate: time.Now().String(),
+	}
 	return nil
 }
 
@@ -91,7 +100,7 @@ func existsInCache(imgName string, obj minio.ObjectInfo) (exists, needsUpdate bo
 	return false, false
 }
 
-func listMetaFiles(minioClient *minio.Client, dirs []string) {
+func listMetaFiles(minioClient *minio.Client, dirs []string, eventChan chan event) {
 	log(fmt.Sprintf("Looking for meta files in bucket [%s] ...", config.S3.BucketName))
 	tempFullProductLinksCache := map[string][]string{}
 	for _, dir := range dirs {
@@ -109,7 +118,8 @@ func listMetaFiles(minioClient *minio.Client, dirs []string) {
 					continue
 				}
 				log("Found geonames file:", obj.Key)
-				err := getGeonamesFileFromBucket(minioClient, obj.Key, formattedFilename)
+				targetImg := strings.ReplaceAll(dir, "/", "@") + config.PreviewFilename
+				err := getGeonamesFileFromBucket(minioClient, obj.Key, formattedFilename, targetImg, eventChan)
 				if err != nil {
 					printError(err, false)
 				}
@@ -162,7 +172,7 @@ func extractFilesFromBucket(minioClient *minio.Client, eventChan chan event) err
 		imagesCache[formattedName] = obj.LastModified
 	}
 
-	listMetaFiles(minioClient, previewBaseDirs)
+	listMetaFiles(minioClient, previewBaseDirs, eventChan)
 
 	return nil
 }
