@@ -126,7 +126,7 @@ func listMetaFiles(minioClient *minio.Client, dirs []string, eventChan chan even
 				continue
 			}
 
-			if strings.HasSuffix(obj.Key, config.FullProductExtension) {
+			if len(config.FullProductExtension) > 0 && strings.HasSuffix(obj.Key, config.FullProductExtension) {
 				tempFullProductLinksCache[dir] = append(tempFullProductLinksCache[dir], config.FullProductProtocol+"://"+config.S3.BucketName+"/"+obj.Key)
 				continue
 			}
