@@ -76,6 +76,7 @@ func getGeonamesFileFromBucket(minioClient *minio.Client, objKey, formattedFilen
 		},
 		EventDate: time.Now().String(),
 	}
+	fmt.Println("Sent geonames for image", targetImg)
 	return nil
 }
 
@@ -100,25 +101,26 @@ func existsInCache(imgName string, obj minio.ObjectInfo) (exists, needsUpdate bo
 	return false, false
 }
 
-func listMetaFiles(minioClient *minio.Client, dirs []string, eventChan chan event) {
+func listMetaFiles(minioClient *minio.Client, dirs map[string]string, eventChan chan event) {
 	log(fmt.Sprintf("Looking for meta files in bucket [%s] ...", config.S3.BucketName))
 	tempFullProductLinksCache := map[string][]string{}
-	for _, dir := range dirs {
+	for dir, targetImg := range dirs {
 		tempFullProductLinksCache[dir] = []string{}
 		ctx, cancel := context.WithTimeout(context.Background(), config.PollingPeriod)
 		defer cancel()
+		fmt.Println("=> Looking for meta files in", dir, "| config.geonamesFilename:", config.GeonamesFilename)
 		for obj := range minioClient.ListObjects(ctx, config.S3.BucketName, minio.ListObjectsOptions{Prefix: dir, Recursive: true}) {
 			if obj.Err != nil {
 				continue
 			}
 
 			if len(config.GeonamesFilename) > 0 && strings.HasSuffix(obj.Key, config.GeonamesFilename) {
-				formattedFilename := formatFileName(dir + config.GeonamesFilename)
+				formattedFilename := formatFileName(dir + "/" + config.GeonamesFilename)
 				if _, alreadyInCache := geonamesCache[formattedFilename]; alreadyInCache {
 					continue
 				}
 				log("Found geonames file:", obj.Key)
-				targetImg := strings.ReplaceAll(dir, "/", "@") + config.PreviewFilename
+				// targetImg := strings.ReplaceAll(dir, "/", "@") + config.PreviewFilename
 				err := getGeonamesFileFromBucket(minioClient, obj.Key, formattedFilename, targetImg, eventChan)
 				if err != nil {
 					printError(err, false)
@@ -137,7 +139,8 @@ func listMetaFiles(minioClient *minio.Client, dirs []string, eventChan chan even
 
 func extractFilesFromBucket(minioClient *minio.Client, eventChan chan event) error {
 	// log(fmt.Sprintf("Looking for images in bucket [%s] ...", config.S3.BucketName))
-	previewBaseDirs := []string{}
+	// previewBaseDirs := []string{}
+	previewBaseDirs := map[string]string{}
 	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
 	defer cancel()
 	for obj := range minioClient.ListObjects(ctx, config.S3.BucketName, minio.ListObjectsOptions{Prefix: config.S3.KeyPrefix, Recursive: true}) {
@@ -154,7 +157,8 @@ func extractFilesFromBucket(minioClient *minio.Client, eventChan chan event) err
 			continue
 		}
 
-		previewBaseDirs = append(previewBaseDirs, strings.TrimSuffix(obj.Key, config.PreviewFilename))
+		// previewBaseDirs = append(previewBaseDirs, obj.Key[:strings.LastIndex(obj.Key, "/")])
+		previewBaseDirs[obj.Key[:strings.LastIndex(obj.Key, "/")]] = obj.Key
 
 		formattedName := formatFileName(obj.Key)
 

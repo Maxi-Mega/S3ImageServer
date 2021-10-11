@@ -109,12 +109,14 @@ func infosHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		strDate = "N/A"
 	}
-	imgDir := strings.TrimSuffix(imgName, config.PreviewFilename)
+	// imgDir := strings.TrimSuffix(imgName, config.PreviewFilename)
+	imgDir := imgName[:strings.LastIndex(imgName, "@")+1]
 	imgFormattedName := strings.ReplaceAll(imgDir, "@", string(os.PathSeparator))
-	links, found := fullProductLinksCache[imgFormattedName]
+	links, found := fullProductLinksCache[strings.TrimSuffix(imgFormattedName, string(os.PathSeparator))]
 	if !found {
 		links = []string{}
 	}
+	fmt.Println("Geonames searched in cache:", imgDir+config.GeonamesFilename)
 	geonames, found := geonamesCache[imgDir+config.GeonamesFilename]
 	if !found {
 		geonames = Geonames{}

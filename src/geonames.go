@@ -100,7 +100,8 @@ func getGeonamesTopLevel(geonames Geonames) string {
 }
 
 func getGeoname(imgName string) string {
-	geonamesFilename := strings.TrimSuffix(imgName, config.PreviewFilename) + config.GeonamesFilename
+	// geonamesFilename := strings.TrimSuffix(imgName, config.PreviewFilename) + config.GeonamesFilename
+	geonamesFilename := imgName[:strings.LastIndex(imgName, "@")+1] + config.GeonamesFilename
 	geoname, found := geonamesCache[geonamesFilename]
 	if found && len(geoname) > 0 {
 		return getGeonamesTopLevel(geoname)
