@@ -136,10 +136,17 @@
                     countImages();
                 }
             }, retentionPeriod * 1000);
+            const previewParts = img.title.split("@");
+            if (previewParts.length >= 2) {
+                img.title = previewParts[previewParts.length - 2];
+            }
         });
         modal.addEventListener("click", () => {
             modalImg.classList.remove("show");
             modal.style.display = "";
+            document.getElementById("modal-links-title").style.display = "none";
+            document.getElementById("geonames-title").style.display = "none";
+            document.getElementById("geonames").style.display = "none";
         });
         document.getElementById("modal-links").addEventListener("click", ev => {
             ev.stopPropagation();
@@ -166,7 +173,7 @@
                 document.querySelectorAll("div.search-hidden").forEach(container => container.classList.remove("search-hidden"));
             } else {
                 document.querySelectorAll("div > a.img-title").forEach(a => {
-                    if (a.innerText.toLowerCase().includes(value)) {
+                    if (a.innerText.toLowerCase().includes(value) || a.href.toLowerCase().substring("/image/".length).includes(value)) {
                         a.parentElement.classList.remove("search-hidden");
                     } else {
                         a.parentElement.classList.add("search-hidden");
@@ -177,7 +184,8 @@
         });
 
         if (window["WebSocket"]) {
-            const conn = new WebSocket("ws://" + document.location.host + "/ws");
+            const wsProtocol = location.protocol === "https:" ? "wss:" : "ws:";
+            const conn = new WebSocket(wsProtocol + "//" + document.location.host + "/ws");
             conn.onclose = function (evt) {
                 console.warn("WebSocket connection closed");
             };
