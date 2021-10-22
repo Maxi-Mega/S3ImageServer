@@ -76,7 +76,6 @@ func getGeonamesFileFromBucket(minioClient *minio.Client, objKey, formattedFilen
 		},
 		EventDate: time.Now().String(),
 	}
-	fmt.Println("Sent geonames for image", targetImg)
 	return nil
 }
 

@@ -211,9 +211,12 @@
                         }
                         break;
                     case "GEONAMES":
-                        const imgElement = container.querySelector(`img[src*="/image/${imgKey}"]`);
+                        const imgElement = container.querySelector(`img[src*="/image/${imgKey.replaceAll('/', '@')}"]`);
                         if (imgElement != null) {
-                            imgElement.parentElement.lastElementChild.innerText = event["event_obj"]["geonames"];
+                            const title = imgElement.parentElement.querySelector("a.img-title");
+                            if (title != null) {
+                                title.innerText = event["event_obj"]["geonames"];
+                            }
                         }
                         break;
                     default:
