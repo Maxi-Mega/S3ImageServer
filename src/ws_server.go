@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/gorilla/websocket"
 	"net/http"
+	"os"
 	"strconv"
 	"time"
 )
@@ -168,7 +169,49 @@ func websocketHandler(w http.ResponseWriter, r *http.Request) {
 		KeyPrefix:              config.S3.KeyPrefix,
 		ImageTypes:             config.ImageTypes,
 		RetentionPeriod:        config.RetentionPeriod.Seconds(),
+		PollingPeriod:          config.PollingPeriod.Seconds(),
 	})
+}
+
+func reloadHandler(w http.ResponseWriter, r *http.Request, eventChan chan event) {
+	log("Reload ...")
+	pollMutex.Lock()
+	defer pollMutex.Unlock()
+	imagesCacheMutex.Lock()
+	defer imagesCacheMutex.Unlock()
+	timersMutex.Lock()
+	defer timersMutex.Unlock()
+	geonamesCacheMutex.Lock()
+	defer geonamesCacheMutex.Unlock()
+	fullProductLinksCacheMutex.Lock()
+	defer fullProductLinksCacheMutex.Unlock()
+
+	// delete all cache in the filesystem
+	err := os.RemoveAll(config.CacheDir)
+	if err != nil {
+		printError(err, false)
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintln(w, "Failed to reload the cache, see the server's console for more details")
+		return
+	}
+
+	// clear all caches in ram
+	imagesCache = map[string]time.Time{}
+	for timerKey, timer := range timers {
+		timer.Stop()
+		delete(timers, timerKey)
+	}
+	geonamesCache = map[string]Geonames{}
+	fullProductLinksCache = map[string][]string{}
+
+	// send a reset signal to all the clients through websocket connections
+	eventChan <- event{
+		EventType: eventReset,
+		EventDate: time.Now().String(),
+	}
+
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintln(w, "Reload done !")
 }
 
 func startWSServer(port uint16, eventChan chan event) error {
@@ -180,7 +223,14 @@ func startWSServer(port uint16, eventChan chan event) error {
 		serveWs(hub, w, r)
 	})
 	http.HandleFunc("/image/", imageHandler)
+	http.HandleFunc("/images", imagesListHandler)
 	http.HandleFunc("/infos/", infosHandler)
+	http.HandleFunc("/reload", func(w http.ResponseWriter, r *http.Request) {
+		reloadHandler(w, r, eventChan)
+	})
+	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNoContent) // for ping
+	})
 
 	fmt.Println("\nStarting web socket server on port", port, "...")
 	return http.ListenAndServe(":"+strconv.FormatUint(uint64(port), 10), nil)

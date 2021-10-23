@@ -18,9 +18,15 @@ const defaultTempDirName = "s3_image_server"
 var config Config
 
 var imagesCache map[string]time.Time
+var imagesCacheMutex sync.Mutex
 var timers map[string]*time.Timer
+var timersMutex sync.Mutex
 var geonamesCache map[string]Geonames
+var geonamesCacheMutex sync.Mutex
 var fullProductLinksCache map[string][]string
+var fullProductLinksCacheMutex sync.Mutex
+
+var pollMutex sync.Mutex
 
 // --config config.yml
 

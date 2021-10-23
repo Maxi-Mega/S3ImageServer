@@ -35,17 +35,21 @@ func getImageFromBucket(minioClient *minio.Client, objKey, formattedKey string, 
 		}
 	}
 	imageId := formattedKey // getImageId(formattedKey, lastModTime)
+	timersMutex.Lock()
 	if timer, found := timers[imageId]; found {
 		timer.Stop()
 	}
 	timers[imageId] = time.AfterFunc(config.RetentionPeriod, func() {
+		imagesCacheMutex.Lock()
 		delete(imagesCache, formattedKey)
+		imagesCacheMutex.Unlock()
 		deleteFileFromCache(formattedKey)
 		if eventChan != nil {
 			eventChan <- event{EventType: eventRemove, EventObj: EventObject{ImgKey: formattedKey}}
 		}
 		delete(timers, imageId)
 	})
+	timersMutex.Unlock()
 	return os.Chtimes(filePath, lastModTime, lastModTime)
 }
 
@@ -62,12 +66,20 @@ func getGeonamesFileFromBucket(minioClient *minio.Client, objKey, formattedFilen
 	if err != nil {
 		return err
 	}
+	geonamesCacheMutex.Lock()
 	geonamesCache[formattedFilename] = geonames
+	geonamesCacheMutex.Unlock()
+	timersMutex.Lock()
 	timers[formattedFilename] = time.AfterFunc(config.RetentionPeriod, func() {
+		geonamesCacheMutex.Lock()
 		delete(geonamesCache, formattedFilename)
+		geonamesCacheMutex.Unlock()
 		deleteFileFromCache(formattedFilename)
+		timersMutex.Lock()
 		delete(timers, formattedFilename)
+		timersMutex.Unlock()
 	})
+	timersMutex.Unlock()
 	eventChan <- event{
 		EventType: eventGeonames,
 		EventObj: EventGeonames{
@@ -133,7 +145,9 @@ func listMetaFiles(minioClient *minio.Client, dirs map[string]string, eventChan 
 			}
 		}
 	}
+	fullProductLinksCacheMutex.Lock()
 	fullProductLinksCache = tempFullProductLinksCache
+	fullProductLinksCacheMutex.Unlock()
 }
 
 func extractFilesFromBucket(minioClient *minio.Client, eventChan chan event) error {
@@ -172,7 +186,9 @@ func extractFilesFromBucket(minioClient *minio.Client, eventChan chan event) err
 		if err != nil {
 			return err
 		}
+		imagesCacheMutex.Lock()
 		imagesCache[formattedName] = obj.LastModified
+		imagesCacheMutex.Unlock()
 	}
 
 	listMetaFiles(minioClient, previewBaseDirs, eventChan)
@@ -182,12 +198,16 @@ func extractFilesFromBucket(minioClient *minio.Client, eventChan chan event) err
 
 func pollBucket(minioClient *minio.Client, eventChan chan event) {
 	go func() {
+		startTime := time.Now()
 		for {
-			time.Sleep(config.PollingPeriod)
+			time.Sleep(config.PollingPeriod - time.Since(startTime))
+			startTime = time.Now()
+			pollMutex.Lock()
 			err := extractFilesFromBucket(minioClient, eventChan)
 			if err != nil {
 				printError(err, false)
 			}
+			pollMutex.Unlock()
 		}
 	}()
 	fmt.Println("Started polling")
@@ -221,7 +241,9 @@ func listenToBucket(minioClient *minio.Client, eventChan chan event) {
 							continue
 						}
 						// TODO: list full product images
+						imagesCacheMutex.Lock()
 						imagesCache[formattedName] = time.Now()
+						imagesCacheMutex.Unlock()
 						eventChan <- event{EventType: eventAdd, EventObj: EventObject{
 							ImgType: getImageType(formattedName),
 							ImgKey:  formattedName,
@@ -230,7 +252,9 @@ func listenToBucket(minioClient *minio.Client, eventChan chan event) {
 					} else if strings.HasPrefix(e.EventName, "s3:ObjectRemoved") {
 						log("[Removed]:", objKey)
 						deleteFileFromCache(formattedName)
+						imagesCacheMutex.Lock()
 						delete(imagesCache, formattedName)
+						imagesCacheMutex.Unlock()
 						eventChan <- event{EventType: eventRemove, EventObj: EventObject{ImgKey: formattedName}}
 					}
 				}

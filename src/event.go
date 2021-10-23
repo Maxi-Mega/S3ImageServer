@@ -11,6 +11,8 @@ const (
 	eventRemove = "REMOVE"
 
 	eventGeonames = "GEONAMES"
+
+	eventReset = "RESET"
 )
 
 type EventObject struct {
