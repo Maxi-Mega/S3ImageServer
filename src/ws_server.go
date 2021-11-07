@@ -67,6 +67,7 @@ func (h *Hub) run(eventChan <-chan event) {
 		case evt := <-eventChan:
 			// eventMsg := []byte(evt.String())
 			eventMsg := evt.Json()
+			fmt.Println("Clients:", len(h.clients))
 			for client := range h.clients {
 				select {
 				case client.send <- eventMsg:

@@ -114,17 +114,13 @@
             }
         }
 
-        //  newImg.onload = () => {
-        // document.body.appendChild(newDiv);
         container.insertBefore(newDiv, container.firstChild);
         if (addToList) {
-            // images.push(img);
-            images[img] = date;
+            images[img["img_key"]] = date;
         }
         countImages();
-        // };
         newImg.onerror = () => {
-            console.warn("Image", img, "not found");
+            console.warn("Image", img["img_key"], "not found");
         };
     }
 
@@ -227,7 +223,7 @@
             conn.onmessage = function (evt) {
                 const msg = evt.data;
                 const event = JSON.parse(msg);
-                console.info("Data update:", event);
+                // console.info("Data update:", event);
                 const imgKey = event["event_obj"] != null ? event["event_obj"]["img_key"] : null;
                 const alreadyLoaded = images.hasOwnProperty(imgKey);
                 switch (event["event_type"]) {

@@ -1,4 +1,4 @@
-# S3ImageServer [V1.7.0]
+# S3ImageServer [V1.7.1]
 ### Browse images from S3 bucket
 
 ## Starting the server

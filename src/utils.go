@@ -82,6 +82,20 @@ func generateImagesCache() map[string]time.Time {
 	return cache
 }
 
+func getCorrespondingImage(objKey string) (image string, found bool) {
+	for img := range imagesCache {
+		lastSlash := strings.LastIndex(img, "@")
+		if lastSlash < 0 {
+			continue
+		}
+		imgDir := img[:lastSlash]
+		if strings.HasPrefix(objKey, imgDir) {
+			return img, true
+		}
+	}
+	return "", false
+}
+
 type ImageInfos struct {
 	Date     string   `json:"date"`
 	Links    []string `json:"links"`

@@ -30,6 +30,7 @@ type event struct {
 	EventType string      `json:"event_type"`
 	EventObj  interface{} `json:"event_obj"`
 	EventDate string      `json:"event_date"`
+	source    string
 }
 
 func (evt event) Json() []byte {

@@ -116,7 +116,6 @@ func infosHandler(w http.ResponseWriter, r *http.Request) {
 	if !found {
 		links = []string{}
 	}
-	fmt.Println("Geonames searched in cache:", imgDir+config.GeonamesFilename)
 	geonames, found := geonamesCache[imgDir+config.GeonamesFilename]
 	if !found {
 		geonames = Geonames{}

@@ -25,13 +25,14 @@ func getImageFromBucket(minioClient *minio.Client, objKey, formattedKey string, 
 	}
 	if eventChan != nil {
 		if updateOnly {
-			eventChan <- event{EventType: eventUpdate, EventObj: EventObject{ImgType: getImageType(formattedKey), ImgKey: formattedKey, ImgName: getGeoname(formattedKey)}, EventDate: lastModTime.String()}
+			eventChan <- event{EventType: eventUpdate, EventObj: EventObject{ImgType: getImageType(formattedKey), ImgKey: formattedKey, ImgName: getGeoname(formattedKey)}, EventDate: lastModTime.String(), source: "getImageFromBucket"}
 		} else {
 			eventChan <- event{EventType: eventAdd, EventObj: EventObject{
 				ImgType: getImageType(formattedKey),
 				ImgKey:  formattedKey,
 				ImgName: getGeoname(formattedKey),
-			}, EventDate: lastModTime.String()}
+			}, EventDate: lastModTime.String(),
+				source: "getImageFromBucket"}
 		}
 	}
 	imageId := formattedKey // getImageId(formattedKey, lastModTime)
@@ -87,6 +88,7 @@ func getGeonamesFileFromBucket(minioClient *minio.Client, objKey, formattedFilen
 			Geonames: getGeonamesTopLevel(geonames),
 		},
 		EventDate: time.Now().String(),
+		source:    "getGeonamesFileFromBucket",
 	}
 	return nil
 }
@@ -214,20 +216,17 @@ func pollBucket(minioClient *minio.Client, eventChan chan event) {
 }
 
 func listenToBucket(minioClient *minio.Client, eventChan chan event) {
-	events := []string{"s3:ObjectCreated:*", "s3:ObjectRemoved:*"}
-	notifs := minioClient.ListenBucketNotification(context.Background(), config.S3.BucketName, config.S3.KeyPrefix, config.PreviewFilename, events)
+	previewNotifs := minioClient.ListenBucketNotification(context.Background(), config.S3.BucketName, config.S3.KeyPrefix, config.PreviewFilename, []string{"s3:ObjectCreated:*", "s3:ObjectRemoved:*"})
+	geonamesNotifs := minioClient.ListenBucketNotification(context.Background(), config.S3.BucketName, config.S3.KeyPrefix, config.GeonamesFilename, []string{"s3:ObjectCreated:*"})
+	fullProductNotifs := minioClient.ListenBucketNotification(context.Background(), config.S3.BucketName, config.S3.KeyPrefix, config.FullProductExtension, []string{"s3:ObjectCreated:*"})
 
 	go func() {
-		/*for {
-			time.Sleep(5 * time.Second)
-			eventChan <- event{eventType: eventAdd, eventObj: "preview.jpg"}
-		}*/
 		log("Starting to listen for bucket notifications ...")
 		for {
 			select {
-			case notif := <-notifs:
+			case notif := <-previewNotifs:
 				if err := notif.Err; err != nil {
-					printError(fmt.Errorf("failed to receive notification: %v", err), false)
+					printError(fmt.Errorf("failed to receive preview notification: %v", err), false)
 					continue
 				}
 				for _, e := range notif.Records {
@@ -235,7 +234,7 @@ func listenToBucket(minioClient *minio.Client, eventChan chan event) {
 					formattedName := formatFileName(objKey)
 					if strings.HasPrefix(e.EventName, "s3:ObjectCreated") {
 						log("[Created]:", objKey)
-						err := getImageFromBucket(minioClient, objKey, formattedName, time.Now(), eventChan, false)
+						err := getImageFromBucket(minioClient, objKey, formattedName, time.Now(), nil, false)
 						if err != nil {
 							printError(err, false)
 							continue
@@ -248,15 +247,65 @@ func listenToBucket(minioClient *minio.Client, eventChan chan event) {
 							ImgType: getImageType(formattedName),
 							ImgKey:  formattedName,
 							ImgName: getGeoname(formattedName),
-						}, EventDate: time.Now().String()}
+						}, EventDate: time.Now().String(),
+							source: "listenToBucket"}
 					} else if strings.HasPrefix(e.EventName, "s3:ObjectRemoved") {
 						log("[Removed]:", objKey)
 						deleteFileFromCache(formattedName)
 						imagesCacheMutex.Lock()
 						delete(imagesCache, formattedName)
 						imagesCacheMutex.Unlock()
-						eventChan <- event{EventType: eventRemove, EventObj: EventObject{ImgKey: formattedName}}
+						eventChan <- event{EventType: eventRemove, EventObj: EventObject{ImgKey: formattedName}, source: "listenToBucket"}
 					}
+				}
+			case notif := <-geonamesNotifs:
+				if err := notif.Err; err != nil {
+					printError(fmt.Errorf("failed to receive geonames notification: %v", err), false)
+					continue
+				}
+				for _, e := range notif.Records {
+					objKey := e.S3.Object.Key
+					log("[Created geonames]:", objKey)
+					formattedFilename := strings.ReplaceAll(objKey, "/", "@")
+					img, found := getCorrespondingImage(formattedFilename)
+					if !found {
+						continue
+					}
+					err := getGeonamesFileFromBucket(minioClient, objKey, img[:strings.LastIndex(img, "@")+1]+config.GeonamesFilename, img, eventChan)
+					if err != nil {
+						printError(err, false)
+						continue
+					}
+				}
+			case notif := <-fullProductNotifs:
+				if err := notif.Err; err != nil {
+					printError(fmt.Errorf("failed to receive full product notification: %v", err), false)
+					continue
+				}
+			RecordsLoop:
+				for _, e := range notif.Records {
+					objKey := e.S3.Object.Key
+					log("[Created full prod]:", objKey)
+					formattedFilename := strings.ReplaceAll(objKey, "/", "@")
+					img, found := getCorrespondingImage(formattedFilename)
+					if !found {
+						continue
+					}
+					imgDir := strings.ReplaceAll(img[:strings.LastIndex(img, "@")], "@", "/")
+					fullProductLink := config.FullProductProtocol + "://" + config.S3.BucketName + "/" + objKey
+					fullProductLinksCacheMutex.Lock()
+					existingLinks, found := fullProductLinksCache[imgDir]
+					if found {
+						for _, link := range existingLinks {
+							if link == fullProductLink {
+								continue RecordsLoop
+							}
+						}
+					} else {
+						existingLinks = []string{}
+					}
+					fullProductLinksCache[imgDir] = append(existingLinks, fullProductLink)
+					fullProductLinksCacheMutex.Unlock()
 				}
 			}
 		}
