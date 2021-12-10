@@ -42,8 +42,13 @@
                 for (const link of jsonData["links"]) {
                     const li = document.createElement("li");
                     const a = document.createElement("a");
+                    a.target = "_blank";
                     a.href = link;
-                    a.innerText = link.substring(link.lastIndexOf("/") + 1);
+                    let formattedLink = link.substring(link.lastIndexOf("/") + 1);
+                    if (formattedLink.indexOf("?") !== -1) {
+                        formattedLink = formattedLink.substring(0, formattedLink.indexOf("?"));
+                    }
+                    a.innerText = formattedLink;
                     li.appendChild(a);
                     modalLinks.appendChild(li);
                 }
@@ -108,8 +113,9 @@
                 newDiv.classList.add("filter-hidden");
             }
         }
-        if (searchInput.value !== "") {
-            if (!newA.innerText.toLowerCase().includes(searchInput.value.toLowerCase())) {
+        const searchValue = searchInput.value.toLowerCase();
+        if (searchValue !== "") {
+            if (!newA.innerText.toLowerCase().includes(searchValue) && !newA.href.toLowerCase().substring("/image/".length).includes(searchValue)) {
                 newDiv.classList.add("search-hidden");
             }
         }

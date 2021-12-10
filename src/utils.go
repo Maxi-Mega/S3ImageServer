@@ -1,9 +1,12 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
+	"github.com/minio/minio-go"
 	"io/fs"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -94,6 +97,18 @@ func getCorrespondingImage(objKey string) (image string, found bool) {
 		}
 	}
 	return "", false
+}
+
+func getFullProductImageLink(minioClient *minio.Client, objKey string) string {
+	if config.FullProductSignedUrl {
+		signedUrl, err := minioClient.PresignedGetObject(context.Background(), config.S3.BucketName, objKey, 7*24*time.Hour, url.Values{})
+		if err != nil {
+			printError(err, false)
+			return ""
+		}
+		return config.FullProductProtocol + signedUrl.String()
+	}
+	return config.FullProductProtocol + config.S3.BucketName + "/" + objKey
 }
 
 type ImageInfos struct {

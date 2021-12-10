@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-const version = "1.7.1"
+const version = "1.7.2"
 
 const defaultTempDirName = "s3_image_server"
 

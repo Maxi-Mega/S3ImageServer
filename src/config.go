@@ -35,6 +35,7 @@ type Config struct {
 	GeonamesFilename       string   `yaml:"geonamesFilename"`
 	FullProductExtension   string   `yaml:"fullProductExtension"`
 	FullProductProtocol    string   `yaml:"fullProductProtocol"`
+	FullProductSignedUrl   bool     `yaml:"fullProductSignedUrl"`
 	ImageTypes             []string `yaml:"imageTypes"`
 
 	Debug           bool          `yaml:"debug"`
@@ -164,6 +165,7 @@ func (config Config) String() string {
 	result += "geonamesFilename: " + config.GeonamesFilename + "\n"
 	result += "fullProductExtension: " + config.FullProductExtension + "\n"
 	result += "fullProductProtocol: " + config.FullProductProtocol + "\n"
+	result += "fullProductSignedUrl: " + strconv.FormatBool(config.FullProductSignedUrl) + "\n"
 	result += "imageTypes: " + strings.Join(config.ImageTypes, ", ") + "\n"
 	result += fmt.Sprintf("debug: %v\ncacheDir: %s\nwebServerPort: %d\n", config.Debug, config.CacheDir, config.WebServerPort)
 	return result

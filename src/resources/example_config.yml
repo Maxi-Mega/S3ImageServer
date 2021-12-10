@@ -11,7 +11,8 @@ scaleInitialPercentage: 50
 previewFilename: "preview.jpg"
 geonamesFilename: "geonames.json"
 fullProductExtension: "tif"
-fullProductProtocol: "protocol"
+fullProductProtocol: "protocol://"
+fullProductSignedUrl: false
 imageTypes:
   - "TYPE1"
   - "TYPE2"

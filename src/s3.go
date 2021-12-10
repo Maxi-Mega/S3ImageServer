@@ -142,7 +142,7 @@ func listMetaFiles(minioClient *minio.Client, dirs map[string]string, eventChan 
 			}
 
 			if len(config.FullProductExtension) > 0 && strings.HasSuffix(obj.Key, config.FullProductExtension) {
-				tempFullProductLinksCache[dir] = append(tempFullProductLinksCache[dir], config.FullProductProtocol+"://"+config.S3.BucketName+"/"+obj.Key)
+				tempFullProductLinksCache[dir] = append(tempFullProductLinksCache[dir], getFullProductImageLink(minioClient, obj.Key))
 				continue
 			}
 		}
@@ -292,7 +292,7 @@ func listenToBucket(minioClient *minio.Client, eventChan chan event) {
 						continue
 					}
 					imgDir := strings.ReplaceAll(img[:strings.LastIndex(img, "@")], "@", "/")
-					fullProductLink := config.FullProductProtocol + "://" + config.S3.BucketName + "/" + objKey
+					fullProductLink := getFullProductImageLink(minioClient, objKey)
 					fullProductLinksCacheMutex.Lock()
 					existingLinks, found := fullProductLinksCache[imgDir]
 					if found {
