@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 )
 
 const (
@@ -52,7 +51,7 @@ func (evt event) String() string {
 	case eventGeonames:
 		return evt.EventType + ":" + evt.EventObj.(EventGeonames).ImgKey
 	default:
-		fmt.Println("[event String()] Unknown event type:", evt.EventType)
+		printWarn("[event String()] Unknown event type: ", evt.EventType)
 		return "Unknown event type:" + evt.EventType
 	}
 }

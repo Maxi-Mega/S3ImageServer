@@ -35,10 +35,13 @@ type Config struct {
 	GeonamesFilename       string   `yaml:"geonamesFilename"`
 	FullProductExtension   string   `yaml:"fullProductExtension"`
 	FullProductProtocol    string   `yaml:"fullProductProtocol"`
+	FullProductRootUrl     string   `yaml:"fullProductRootUrl"`
 	FullProductSignedUrl   bool     `yaml:"fullProductSignedUrl"`
 	ImageTypes             []string `yaml:"imageTypes"`
 
-	Debug           bool          `yaml:"debug"`
+	LogLevel        string        `yaml:"logLevel"`
+	ColorLogs       bool          `yaml:"colorLogs"`
+	JsonLogFormat   bool          `yaml:"jsonLogFormat"`
 	HttpTrace       bool          `yaml:"httpTrace"`
 	CacheDir        string        `yaml:"cacheDir"`
 	RetentionPeriod time.Duration `yaml:"retentionPeriod"`
@@ -54,10 +57,13 @@ var defaultConfig = Config{
 
 	WindowTitle: "S3 Image Viewer",
 
-	Debug:         false,
+	LogLevel:      levelInfo,
+	ColorLogs:     false,
+	JsonLogFormat: false,
 	HttpTrace:     false,
 	CacheDir:      path.Join(os.TempDir(), defaultTempDirName),
 	PollingMode:   false,
+	PollingPeriod: 10 * time.Second,
 	WebServerPort: 9999,
 }
 
@@ -81,10 +87,6 @@ func (config *Config) loadDefaults() {
 			if fieldValue.(uint8) < 1 || fieldValue.(uint8) > 100 {
 				config.ScaleInitialPercentage = 50
 			}
-		case "Debug":
-			/*if fieldValue.(bool) == false {
-				config.Debug = defaultConfig.Debug
-			}*/
 		case "CacheDir":
 			if fieldValue.(string) == "" {
 				config.CacheDir = defaultConfig.CacheDir
@@ -116,6 +118,14 @@ func (config *Config) checkValidity() (bool, []string) {
 		errs = append(errs, "no image type provided")
 	}
 
+	if len(config.LogLevel) == 0 {
+		errs = append(errs, "no log level provided")
+	} else {
+		if config.LogLevel != levelDebug && config.LogLevel != levelInfo && config.LogLevel != levelWarn && config.LogLevel != levelError {
+			errs = append(errs, "invalid log level")
+		}
+	}
+
 	if config.RetentionPeriod == 0 {
 		errs = append(errs, "no retention period provided")
 	}
@@ -142,11 +152,12 @@ func loadConfigFromFile(filePath string) (Config, error) {
 	for i, imgType := range cfg.ImageTypes {
 		for j, iT := range cfg.ImageTypes {
 			if i != j && imgType == iT {
-				log("Removed duplicate image type:", imgType)
+				printWarn("Removed duplicate image type: ", imgType)
 				cfg.ImageTypes = append(cfg.ImageTypes[:i], cfg.ImageTypes[i+1:]...)
 			}
 		}
 	}
+	cfg.LogLevel = strings.ToLower(cfg.LogLevel)
 	cfg.loadDefaults()
 	valid, errs := cfg.checkValidity()
 	if !valid {
@@ -165,9 +176,11 @@ func (config Config) String() string {
 	result += "geonamesFilename: " + config.GeonamesFilename + "\n"
 	result += "fullProductExtension: " + config.FullProductExtension + "\n"
 	result += "fullProductProtocol: " + config.FullProductProtocol + "\n"
+	result += "fullProductRootUrl: " + config.FullProductRootUrl + "\n"
 	result += "fullProductSignedUrl: " + strconv.FormatBool(config.FullProductSignedUrl) + "\n"
 	result += "imageTypes: " + strings.Join(config.ImageTypes, ", ") + "\n"
-	result += fmt.Sprintf("debug: %v\ncacheDir: %s\nwebServerPort: %d\n", config.Debug, config.CacheDir, config.WebServerPort)
+	result += fmt.Sprintf("logLevel: %s\ncolorLogs: %v\njsonLogFormat: %v\nhttpTrace: %v\n", config.LogLevel, config.ColorLogs, config.JsonLogFormat, config.HttpTrace)
+	result += fmt.Sprintf("cacheDir: %s\npollingMode: %v\npollingPeriod: %v\nwebServerPort: %d\n", config.CacheDir, config.PollingMode, config.PollingPeriod, config.WebServerPort)
 	return result
 }
 

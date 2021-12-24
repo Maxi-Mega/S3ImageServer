@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-const version = "1.7.2"
+const version = "1.8.0"
 
 const defaultTempDirName = "s3_image_server"
 
@@ -63,11 +63,13 @@ func main() {
 		exitWithError(fmt.Errorf("invalid configuration: %v", err))
 	}
 
-	if config.Debug {
-		fmt.Println("Starting S3 Image Server " + version + " with configuration:")
+	if config.LogLevel == levelDebug {
+		fmt.Println("\nStarting S3 Image Server " + version + " with configuration:")
 		fmt.Println(config.String())
+		fmt.Print("\n")
 	} else {
-		fmt.Println("Starting S3 Image Server " + version + " ...")
+		fmt.Println("\nStarting S3 Image Server " + version + " ...")
+		fmt.Print("\n")
 	}
 
 	minioClient, err := minio.New(config.S3.EndPoint, &minio.Options{
@@ -78,11 +80,13 @@ func main() {
 		exitWithError(err)
 	}
 
+	initLogger()
+
 	if config.HttpTrace {
 		minioClient.TraceOn(os.Stdout)
 	}
 
-	log("S3 endpoint:", minioClient.EndpointURL())
+	printDebug("S3 endpoint:", minioClient.EndpointURL())
 
 	if _, err = os.Stat(config.CacheDir); os.IsNotExist(err) {
 		err = os.Mkdir(config.CacheDir, 0750)
@@ -117,7 +121,7 @@ func main() {
 		exitWithError(fmt.Errorf("failed to extract files from bucket: %v", err))
 	}
 
-	log("Found images have been stored in", config.CacheDir, "!")
+	printDebug("Found images have been stored in", config.CacheDir, "!")
 
 	wg := new(sync.WaitGroup)
 	wg.Add(1)

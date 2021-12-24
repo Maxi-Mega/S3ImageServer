@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"html/template"
 	"io"
 	"net/http"
@@ -36,7 +35,7 @@ func startWebServer(port uint16) error {
 		w.WriteHeader(http.StatusNoContent) // for ping
 	})
 
-	fmt.Println("\nStarting web server on port", port, "...")
+	printInfo("Starting web server on port ", port, " ...")
 	return http.ListenAndServe(":"+strconv.FormatUint(uint64(port), 10), nil)
 }
 

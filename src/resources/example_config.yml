@@ -18,7 +18,9 @@ imageTypes:
   - "TYPE2"
   - "TYPE3"
 
-debug: false
+logLevel: "info"
+colorLogs: false
+jsonLogFormat: false
 httpTrace: false
 cacheDir: ""        # Nothing = default
 retentionPeriod: 10m

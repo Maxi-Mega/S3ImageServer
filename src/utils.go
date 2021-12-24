@@ -70,7 +70,7 @@ func generateImagesCache() map[string]time.Time {
 			return err
 		}
 		if info.ModTime().Add(config.RetentionPeriod).Before(time.Now()) {
-			log("Removing obsolete file from cache:", imagePath)
+			printDebug("Removing obsolete file from cache: ", imagePath)
 			return os.Remove(imagePath)
 		}
 		if strings.HasSuffix(imagePath, config.PreviewFilename) {
@@ -106,7 +106,7 @@ func getFullProductImageLink(minioClient *minio.Client, objKey string) string {
 			printError(err, false)
 			return ""
 		}
-		return config.FullProductProtocol + signedUrl.String()
+		return config.FullProductProtocol + url.QueryEscape(config.FullProductRootUrl+signedUrl.Path)
 	}
 	return config.FullProductProtocol + config.S3.BucketName + "/" + objKey
 }

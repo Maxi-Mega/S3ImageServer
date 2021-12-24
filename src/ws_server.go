@@ -174,7 +174,7 @@ func websocketHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func reloadHandler(w http.ResponseWriter, r *http.Request, eventChan chan event) {
-	log("Reload ...")
+	printInfo("Reload ...")
 	pollMutex.Lock()
 	defer pollMutex.Unlock()
 	imagesCacheMutex.Lock()
@@ -232,6 +232,6 @@ func startWSServer(port uint16, eventChan chan event) error {
 		w.WriteHeader(http.StatusNoContent) // for ping
 	})
 
-	fmt.Println("\nStarting web socket server on port", port, "...")
+	printInfo("Starting web socket server on port ", port, " ...")
 	return http.ListenAndServe(":"+strconv.FormatUint(uint64(port), 10), nil)
 }
