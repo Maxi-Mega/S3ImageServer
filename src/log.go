@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/rs/zerolog"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -21,6 +22,9 @@ var logger zerolog.Logger
 func init() {
 	zerolog.TimestampFieldName = "date"
 	zerolog.TimeFieldFormat = logTimeFormat
+	for _, v := range []*string{&zerolog.LevelTraceValue, &zerolog.LevelDebugValue, &zerolog.LevelInfoValue, &zerolog.LevelWarnValue, &zerolog.LevelErrorValue, &zerolog.LevelFatalValue, &zerolog.LevelPanicValue} {
+		*v = strings.ToUpper(*v)
+	}
 	consoleWriter := zerolog.ConsoleWriter{
 		Out:        os.Stdout,
 		NoColor:    true,
@@ -32,7 +36,11 @@ func init() {
 
 func initLogger() {
 	if config.JsonLogFormat {
-		logger = zerolog.New(os.Stdout).With().Timestamp().Logger()
+		ctx := zerolog.New(os.Stdout).With().Timestamp()
+		for key, value := range config.JsonLogFields {
+			ctx = ctx.Interface(key, value)
+		}
+		logger = ctx.Logger()
 	} else {
 		consoleWriter := zerolog.ConsoleWriter{
 			Out:        os.Stdout,

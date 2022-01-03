@@ -39,10 +39,12 @@ type Config struct {
 	FullProductSignedUrl   bool     `yaml:"fullProductSignedUrl"`
 	ImageTypes             []string `yaml:"imageTypes"`
 
-	LogLevel        string        `yaml:"logLevel"`
-	ColorLogs       bool          `yaml:"colorLogs"`
-	JsonLogFormat   bool          `yaml:"jsonLogFormat"`
-	HttpTrace       bool          `yaml:"httpTrace"`
+	LogLevel      string                 `yaml:"logLevel"`
+	ColorLogs     bool                   `yaml:"colorLogs"`
+	JsonLogFormat bool                   `yaml:"jsonLogFormat"`
+	JsonLogFields map[string]interface{} `yaml:"jsonLogFields"`
+	HttpTrace     bool                   `yaml:"httpTrace"`
+
 	CacheDir        string        `yaml:"cacheDir"`
 	RetentionPeriod time.Duration `yaml:"retentionPeriod"`
 	PollingMode     bool          `yaml:"pollingMode"`
@@ -60,6 +62,7 @@ var defaultConfig = Config{
 	LogLevel:      levelInfo,
 	ColorLogs:     false,
 	JsonLogFormat: false,
+	JsonLogFields: map[string]interface{}{},
 	HttpTrace:     false,
 	CacheDir:      path.Join(os.TempDir(), defaultTempDirName),
 	PollingMode:   false,
@@ -86,6 +89,10 @@ func (config *Config) loadDefaults() {
 		case "ScaleInitialPercentage":
 			if fieldValue.(uint8) < 1 || fieldValue.(uint8) > 100 {
 				config.ScaleInitialPercentage = 50
+			}
+		case "JsonLogFields":
+			if fieldValue.(map[string]interface{}) == nil {
+				config.JsonLogFields = defaultConfig.JsonLogFields
 			}
 		case "CacheDir":
 			if fieldValue.(string) == "" {
@@ -179,7 +186,7 @@ func (config Config) String() string {
 	result += "fullProductRootUrl: " + config.FullProductRootUrl + "\n"
 	result += "fullProductSignedUrl: " + strconv.FormatBool(config.FullProductSignedUrl) + "\n"
 	result += "imageTypes: " + strings.Join(config.ImageTypes, ", ") + "\n"
-	result += fmt.Sprintf("logLevel: %s\ncolorLogs: %v\njsonLogFormat: %v\nhttpTrace: %v\n", config.LogLevel, config.ColorLogs, config.JsonLogFormat, config.HttpTrace)
+	result += fmt.Sprintf("logLevel: %s\ncolorLogs: %v\njsonLogFormat: %v\njsonLogFields: %v\nhttpTrace: %v\n", config.LogLevel, config.ColorLogs, config.JsonLogFormat, config.JsonLogFields, config.HttpTrace)
 	result += fmt.Sprintf("cacheDir: %s\npollingMode: %v\npollingPeriod: %v\nwebServerPort: %d\n", config.CacheDir, config.PollingMode, config.PollingPeriod, config.WebServerPort)
 	return result
 }

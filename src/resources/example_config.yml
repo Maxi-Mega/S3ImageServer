@@ -21,6 +21,9 @@ imageTypes:
 logLevel: "info"
 colorLogs: false
 jsonLogFormat: false
+jsonLogFields:
+  class_name: "prod"
+  server: 42
 httpTrace: false
 cacheDir: ""        # Nothing = default
 retentionPeriod: 10m
