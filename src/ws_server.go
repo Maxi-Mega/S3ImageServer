@@ -166,6 +166,7 @@ func websocketHandler(w http.ResponseWriter, r *http.Request) {
 		Previews:               getImagesList(),
 		PreviewsWithTime:       imagesCache,
 		PreviewFilename:        config.PreviewFilename,
+		FullProductExtension:   config.FullProductExtension,
 		KeyPrefix:              config.S3.KeyPrefix,
 		ImageTypes:             config.ImageTypes,
 		RetentionPeriod:        config.RetentionPeriod.Seconds(),

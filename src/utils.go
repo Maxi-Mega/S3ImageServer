@@ -106,7 +106,8 @@ func getFullProductImageLink(minioClient *minio.Client, objKey string) string {
 			printError(err, false)
 			return ""
 		}
-		return config.FullProductProtocol + url.QueryEscape(config.FullProductRootUrl+signedUrl.Path)
+		newSignedUrl := strings.TrimPrefix(signedUrl.String(), signedUrl.Scheme+"://"+signedUrl.Host)
+		return config.FullProductProtocol + url.QueryEscape(config.FullProductRootUrl+newSignedUrl)
 	}
 	return config.FullProductProtocol + config.S3.BucketName + "/" + objKey
 }

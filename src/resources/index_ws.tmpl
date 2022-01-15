@@ -4,6 +4,7 @@
     const previewFilename = {{.PreviewFilename}};
     const prefixName = {{.PrefixName}};
     const keyPrefix = {{.KeyPrefix}};
+    const fullProductExtension = {{.FullProductExtension}};
     const imageTypes = {{.ImageTypes}};
     const retentionPeriod = {{.RetentionPeriod}}; // in seconds
     const refreshPeriod = {{.PollingPeriod}}; // in seconds
@@ -47,6 +48,10 @@
                     let formattedLink = link.substring(Math.max(link.lastIndexOf("/") + 1, link.lastIndexOf("%2F") + 3));
                     if (formattedLink.indexOf("?") !== -1) {
                         formattedLink = formattedLink.substring(0, formattedLink.indexOf("?"));
+                    }
+                    if (formattedLink.indexOf(fullProductExtension) !== -1) {
+                        console.info(formattedLink);
+                        formattedLink = formattedLink.substring(0, formattedLink.indexOf(fullProductExtension) + fullProductExtension.length);
                     }
                     a.innerText = formattedLink;
                     li.appendChild(a);

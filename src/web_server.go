@@ -21,6 +21,7 @@ type templateData struct {
 	PreviewsWithTime       map[string]time.Time
 	PreviewFilename        string
 	KeyPrefix              string
+	FullProductExtension   string
 	ImageTypes             []string
 	RetentionPeriod        float64
 	PollingPeriod          float64
@@ -68,6 +69,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		Previews:               getImagesList(),
 		PreviewsWithTime:       imagesCache,
 		PreviewFilename:        config.PreviewFilename,
+		FullProductExtension:   config.FullProductExtension,
 		KeyPrefix:              config.S3.KeyPrefix,
 		ImageTypes:             config.ImageTypes,
 		RetentionPeriod:        config.RetentionPeriod.Seconds(),
