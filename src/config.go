@@ -29,6 +29,7 @@ type S3Config struct {
 type Config struct {
 	S3 S3Config `yaml:"s3"`
 
+	BasePath               string   `yaml:"basePath"`
 	WindowTitle            string   `yaml:"windowTitle"`
 	ScaleInitialPercentage uint8    `yaml:"scaleInitialPercentage"`
 	PreviewFilename        string   `yaml:"previewFilename"`
@@ -57,6 +58,7 @@ var defaultConfig = Config{
 		UseSSL: false,
 	},
 
+	BasePath:    "",
 	WindowTitle: "S3 Image Viewer",
 
 	LogLevel:      levelInfo,
@@ -177,6 +179,7 @@ func (config Config) String() string {
 	result := "S3:\n"
 	s3 := config.S3
 	result += fmt.Sprintf("\tendPoint: %s\n\tbucketName: %s\n\tkeyPrefix: %s\n\taccessId: %s\n\taccessSecret: %s\n", s3.EndPoint, s3.BucketName, s3.KeyPrefix, s3.AccessId, s3.AccessSecret)
+	result += "basePath: " + config.BasePath + "\n"
 	result += "windowTitle: " + config.WindowTitle + "\n"
 	result += "scaleInitialPercentage: " + strconv.FormatUint(uint64(config.ScaleInitialPercentage), 10) + "\n"
 	result += "previewFilename: " + config.PreviewFilename + "\n"

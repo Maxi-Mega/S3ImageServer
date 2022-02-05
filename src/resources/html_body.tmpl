@@ -226,11 +226,12 @@
         <div id="version">Version: {{.Version}}</div>
     </header>
     <div class="container">
+        {{$basePath := .BasePath}}
         {{range .Previews}}
             <div class="img-container" img-type="{{.ImgType}}" img-name="{{.ImgKey}}">
-                <img src="/image/{{.ImgKey}}" alt="{{.ImgKey}}" title="{{.ImgKey}}"/>
+                <img src="{{$basePath}}/image/{{.ImgKey}}" alt="{{.ImgKey}}" title="{{.ImgKey}}"/>
                 <br/>
-                <a class="img-title" href="/image/{{.ImgKey}}" target="_blank"
+                <a class="img-title" href="{{$basePath}}/image/{{.ImgKey}}" target="_blank"
                    title="Click to open the image in a new tab">{{.ImgName}}</a>
             </div>
         {{end}}

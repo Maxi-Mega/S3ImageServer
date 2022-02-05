@@ -13,6 +13,7 @@ import (
 
 type templateData struct {
 	Version                string
+	BasePath               string
 	WindowTitle            string
 	ScaleInitialPercentage uint8
 	BucketName             string

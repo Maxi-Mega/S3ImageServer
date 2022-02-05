@@ -33,7 +33,7 @@
     }
 
     function modalize(img) {
-        fetch("infos/" + img.alt).then(response => { // .replaceAll("@", "/")
+        fetch("{{.BasePath}}/infos/" + img.alt).then(response => { // .replaceAll("@", "/")
             response.json().then(jsonData => {
                 jsonData = jsonData.data;
                 document.getElementById("modal-img-date").innerText = "Generation date: " + jsonData["date"];
@@ -91,7 +91,7 @@
 
     function addNewImg(img, date, addToList = true) {
         const newImg = document.createElement("img");
-        newImg.src = "/image/" + img["img_key"] + "?time=" + Date.now();
+        newImg.src = "{{.BasePath}}/image/" + img["img_key"] + "?time=" + Date.now();
         newImg.alt = img["img_key"];
         const previewParts = img["img_key"].split("@");
         if (previewParts.length >= 2) {
@@ -101,7 +101,7 @@
         newImg.addEventListener("click", () => modalize(newImg));
         const newA = document.createElement("a");
         newA.classList.add("img-title");
-        newA.href = "/image/" + img["img_key"];
+        newA.href = "{{.BasePath}}/image/" + img["img_key"];
         newA.target = "_blank";
         newA.title = "Click to open the image in a new tab";
         newA.style.fontSize = currentFontSize;
@@ -136,7 +136,7 @@
     }
 
     function pollEverything() {
-        fetch("images").then(response => {
+        fetch("{{.BasePath}}/images").then(response => {
             if (!response.ok) {
                 console.error("Failed to poll everything:", response.statusText);
                 return;
@@ -224,7 +224,7 @@
 
         if (window["WebSocket"]) {
             const wsProtocol = location.protocol === "https:" ? "wss:" : "ws:";
-            const conn = new WebSocket(wsProtocol + "//" + document.location.host + "/ws");
+            const conn = new WebSocket(wsProtocol + "//" + document.location.host + ("{{.BasePath}}".length > 0 ? "{{.BasePath}}/":"") + "/ws");
             conn.onerror = function (evt) {
                 console.error("WebSocket connection error:", evt);
             };
@@ -244,13 +244,13 @@
                             break;
                         }
                         if (alreadyLoaded) {
-                            container.removeChild(document.querySelector(`img[src*="/image/${imgKey}"]`).parentElement);
+                            container.removeChild(document.querySelector(`img[src*="{{.BasePath}}/image/${imgKey}"]`).parentElement);
                         }
                         addNewImg(event["event_obj"], event["event_date"]);
                         break;
                     case "REMOVE":
                         if (alreadyLoaded) {
-                            container.removeChild(document.querySelector(`img[src*="/image/${imgKey}"]`).parentElement);
+                            container.removeChild(document.querySelector(`img[src*="{{.BasePath}}/image/${imgKey}"]`).parentElement);
                             delete images[imgKey];
                             countImages();
                         }
@@ -260,7 +260,7 @@
                             imagesGeonamesToDisplay[imgKey.replaceAll('/', '@')] = event["event_obj"]["geonames"];
                             break;
                         }
-                        const imgElement = container.querySelector(`img[src*="/image/${imgKey.replaceAll('/', '@')}"]`);
+                        const imgElement = container.querySelector(`img[src*="{{.BasePath}}/image/${imgKey.replaceAll('/', '@')}"]`);
                         if (imgElement != null) {
                             const title = imgElement.parentElement.querySelector("a.img-title");
                             if (title != null) {

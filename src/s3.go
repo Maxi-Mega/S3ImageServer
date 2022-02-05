@@ -10,19 +10,17 @@ import (
 	"time"
 )
 
-func getFileFromBucket(minioClient *minio.Client, objKey, filePath string) error {
+func getFileFromBucket(minioClient *minio.Client, objKey, filePath string) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	return minioClient.FGetObject(ctx, config.S3.BucketName, objKey, filePath, minio.GetObjectOptions{})
+	if err := minioClient.FGetObject(ctx, config.S3.BucketName, objKey, filePath, minio.GetObjectOptions{}); err != nil {
+		exitWithError(fmt.Errorf("failed to fetch file from s3 bucket => exit: %v", err))
+	}
 }
 
 func getImageFromBucket(minioClient *minio.Client, objKey, formattedKey string, lastModTime time.Time, eventChan chan event, updateOnly bool) error {
 	filePath := path.Join(config.CacheDir, formattedKey)
-	err := getFileFromBucket(minioClient, objKey, filePath)
-	if err != nil {
-		printError(err, false)
-		return nil
-	}
+	getFileFromBucket(minioClient, objKey, filePath)
 	if eventChan != nil {
 		if updateOnly {
 			eventChan <- event{EventType: eventUpdate, EventObj: EventObject{ImgType: getImageType(formattedKey), ImgKey: formattedKey, ImgName: getGeoname(formattedKey)}, EventDate: lastModTime.String(), source: "getImageFromBucket"}
@@ -56,10 +54,7 @@ func getImageFromBucket(minioClient *minio.Client, objKey, formattedKey string, 
 
 func getGeonamesFileFromBucket(minioClient *minio.Client, objKey, formattedFilename, targetImg string, eventChan chan event) error {
 	filePath := path.Join(config.CacheDir, formattedFilename)
-	err := getFileFromBucket(minioClient, objKey, filePath)
-	if err != nil {
-		return err
-	}
+	getFileFromBucket(minioClient, objKey, filePath)
 	if timer, found := timers[formattedFilename]; found {
 		timer.Stop()
 	}
@@ -118,34 +113,36 @@ func listMetaFiles(minioClient *minio.Client, dirs map[string]string, eventChan 
 	printDebug(fmt.Sprintf("Looking for meta files in bucket [%s] ...", config.S3.BucketName))
 	tempFullProductLinksCache := map[string][]string{}
 	for dir, targetImg := range dirs {
-		tempFullProductLinksCache[dir] = []string{}
-		ctx, cancel := context.WithTimeout(context.Background(), config.PollingPeriod)
-		defer cancel()
-		printDebug("Looking for meta files in ", dir, " | config.geonamesFilename: ", config.GeonamesFilename)
-		for obj := range minioClient.ListObjects(ctx, config.S3.BucketName, minio.ListObjectsOptions{Prefix: dir, Recursive: true}) {
-			if obj.Err != nil {
-				continue
-			}
-
-			if len(config.GeonamesFilename) > 0 && strings.HasSuffix(obj.Key, config.GeonamesFilename) {
-				formattedFilename := formatFileName(dir + "/" + config.GeonamesFilename)
-				if _, alreadyInCache := geonamesCache[formattedFilename]; alreadyInCache {
+		func() {
+			tempFullProductLinksCache[dir] = []string{}
+			ctx, cancel := context.WithTimeout(context.Background(), config.PollingPeriod)
+			defer cancel()
+			printDebug("Looking for meta files in ", dir, " | config.geonamesFilename: ", config.GeonamesFilename)
+			for obj := range minioClient.ListObjects(ctx, config.S3.BucketName, minio.ListObjectsOptions{Prefix: dir, Recursive: true}) {
+				if obj.Err != nil {
 					continue
 				}
-				printDebug("Found geonames file: ", obj.Key)
-				// targetImg := strings.ReplaceAll(dir, "/", "@") + config.PreviewFilename
-				err := getGeonamesFileFromBucket(minioClient, obj.Key, formattedFilename, targetImg, eventChan)
-				if err != nil {
-					printError(err, false)
-				}
-				continue
-			}
 
-			if len(config.FullProductExtension) > 0 && strings.HasSuffix(obj.Key, config.FullProductExtension) {
-				tempFullProductLinksCache[dir] = append(tempFullProductLinksCache[dir], getFullProductImageLink(minioClient, obj.Key))
-				continue
+				if len(config.GeonamesFilename) > 0 && strings.HasSuffix(obj.Key, config.GeonamesFilename) {
+					formattedFilename := formatFileName(dir + "/" + config.GeonamesFilename)
+					if _, alreadyInCache := geonamesCache[formattedFilename]; alreadyInCache {
+						continue
+					}
+					printDebug("Found geonames file: ", obj.Key)
+					// targetImg := strings.ReplaceAll(dir, "/", "@") + config.PreviewFilename
+					err := getGeonamesFileFromBucket(minioClient, obj.Key, formattedFilename, targetImg, eventChan)
+					if err != nil {
+						printError(err, false)
+					}
+					continue
+				}
+
+				if len(config.FullProductExtension) > 0 && strings.HasSuffix(obj.Key, config.FullProductExtension) {
+					tempFullProductLinksCache[dir] = append(tempFullProductLinksCache[dir], getFullProductImageLink(minioClient, obj.Key))
+					continue
+				}
 			}
-		}
+		}()
 	}
 	fullProductLinksCacheMutex.Lock()
 	fullProductLinksCache = tempFullProductLinksCache
@@ -160,6 +157,7 @@ func extractFilesFromBucket(minioClient *minio.Client, eventChan chan event) err
 	defer cancel()
 	for obj := range minioClient.ListObjects(ctx, config.S3.BucketName, minio.ListObjectsOptions{Prefix: config.S3.KeyPrefix, Recursive: true}) {
 		if obj.Err != nil {
+			exitWithError(fmt.Errorf("no connection to S3 server => exit: %v", obj.Err))
 			return obj.Err
 		}
 

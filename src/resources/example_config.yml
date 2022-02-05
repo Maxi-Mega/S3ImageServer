@@ -6,6 +6,7 @@ s3:
   accessSecret: "password"
   useSSL: false                 # Not tested
 
+basePath: "" # Empty or starting with a slash
 windowTitle: "S3 Image Viewer"
 scaleInitialPercentage: 50
 previewFilename: "preview.jpg"
