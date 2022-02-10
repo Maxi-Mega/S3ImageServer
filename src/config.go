@@ -45,6 +45,7 @@ type Config struct {
 	JsonLogFormat bool                   `yaml:"jsonLogFormat"`
 	JsonLogFields map[string]interface{} `yaml:"jsonLogFields"`
 	HttpTrace     bool                   `yaml:"httpTrace"`
+	ExitOnS3Error bool                   `yaml:"exitOnS3Error"`
 
 	CacheDir        string        `yaml:"cacheDir"`
 	RetentionPeriod time.Duration `yaml:"retentionPeriod"`
@@ -66,6 +67,7 @@ var defaultConfig = Config{
 	JsonLogFormat: false,
 	JsonLogFields: map[string]interface{}{},
 	HttpTrace:     false,
+	ExitOnS3Error: false,
 	CacheDir:      path.Join(os.TempDir(), defaultTempDirName),
 	PollingMode:   false,
 	PollingPeriod: 10 * time.Second,
@@ -189,7 +191,7 @@ func (config Config) String() string {
 	result += "fullProductRootUrl: " + config.FullProductRootUrl + "\n"
 	result += "fullProductSignedUrl: " + strconv.FormatBool(config.FullProductSignedUrl) + "\n"
 	result += "imageTypes: " + strings.Join(config.ImageTypes, ", ") + "\n"
-	result += fmt.Sprintf("logLevel: %s\ncolorLogs: %v\njsonLogFormat: %v\njsonLogFields: %v\nhttpTrace: %v\n", config.LogLevel, config.ColorLogs, config.JsonLogFormat, config.JsonLogFields, config.HttpTrace)
+	result += fmt.Sprintf("logLevel: %s\ncolorLogs: %v\njsonLogFormat: %v\njsonLogFields: %v\nhttpTrace: %v\nexitOnS3Error: %v\n", config.LogLevel, config.ColorLogs, config.JsonLogFormat, config.JsonLogFields, config.HttpTrace, config.ExitOnS3Error)
 	result += fmt.Sprintf("cacheDir: %s\npollingMode: %v\npollingPeriod: %v\nwebServerPort: %d\n", config.CacheDir, config.PollingMode, config.PollingPeriod, config.WebServerPort)
 	return result
 }

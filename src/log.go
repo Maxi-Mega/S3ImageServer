@@ -99,3 +99,10 @@ func exitWithError(err error) {
 	printError(err, true)
 	os.Exit(1)
 }
+
+func handleS3Error(err error) {
+	if config.ExitOnS3Error {
+		exitWithError(err)
+	}
+	// printError(err, false)
+}

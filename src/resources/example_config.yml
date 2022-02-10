@@ -26,6 +26,7 @@ jsonLogFields:
   class_name: "prod"
   server: 42
 httpTrace: false
+exitOnS3Error: false
 cacheDir: ""        # Nothing = default
 retentionPeriod: 10m
 pollingMode: false

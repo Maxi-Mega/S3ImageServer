@@ -10,17 +10,22 @@ import (
 	"time"
 )
 
-func getFileFromBucket(minioClient *minio.Client, objKey, filePath string) {
+func getFileFromBucket(minioClient *minio.Client, objKey, filePath string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	if err := minioClient.FGetObject(ctx, config.S3.BucketName, objKey, filePath, minio.GetObjectOptions{}); err != nil {
-		exitWithError(fmt.Errorf("failed to fetch file from s3 bucket => exit: %v", err))
+		handleS3Error(fmt.Errorf("failed to fetch file from s3 bucket => exit: %v", err))
+		return err
 	}
+	return nil
 }
 
 func getImageFromBucket(minioClient *minio.Client, objKey, formattedKey string, lastModTime time.Time, eventChan chan event, updateOnly bool) error {
 	filePath := path.Join(config.CacheDir, formattedKey)
-	getFileFromBucket(minioClient, objKey, filePath)
+	err := getFileFromBucket(minioClient, objKey, filePath)
+	if err != nil {
+		return err
+	}
 	if eventChan != nil {
 		if updateOnly {
 			eventChan <- event{EventType: eventUpdate, EventObj: EventObject{ImgType: getImageType(formattedKey), ImgKey: formattedKey, ImgName: getGeoname(formattedKey)}, EventDate: lastModTime.String(), source: "getImageFromBucket"}
@@ -157,7 +162,7 @@ func extractFilesFromBucket(minioClient *minio.Client, eventChan chan event) err
 	defer cancel()
 	for obj := range minioClient.ListObjects(ctx, config.S3.BucketName, minio.ListObjectsOptions{Prefix: config.S3.KeyPrefix, Recursive: true}) {
 		if obj.Err != nil {
-			exitWithError(fmt.Errorf("no connection to S3 server => exit: %v", obj.Err))
+			handleS3Error(fmt.Errorf("no connection to S3 server => exit: %v", obj.Err))
 			return obj.Err
 		}
 
