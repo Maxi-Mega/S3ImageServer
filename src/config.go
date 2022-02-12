@@ -197,5 +197,5 @@ func (config Config) String() string {
 }
 
 func printDefaultConfig() {
-	fmt.Print("\nconfig.yml example:\n-------------------\n", defaultConfigFile, "\n\n\n")
+	fmt.Print("\nconfig.yml example:\n-------------------\n", defaultConfigFile, "\n\n")
 }

@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"github.com/minio/minio-go"
+	"github.com/minio/minio-go/v7"
 	"io/fs"
 	"net/http"
 	"net/url"

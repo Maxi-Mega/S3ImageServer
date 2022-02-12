@@ -4,14 +4,14 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/minio/minio-go"
-	"github.com/minio/minio-go/pkg/credentials"
+	"github.com/minio/minio-go/v7"
+	"github.com/minio/minio-go/v7/pkg/credentials"
 	"os"
 	"sync"
 	"time"
 )
 
-const version = "1.9.1"
+const version = "2.0.0"
 
 const defaultTempDirName = "s3_image_server"
 

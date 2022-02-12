@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/minio/minio-go"
+	"github.com/minio/minio-go/v7"
 	"os"
 	"path"
 	"strings"
