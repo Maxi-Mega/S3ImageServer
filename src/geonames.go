@@ -73,7 +73,7 @@ func parseGeonames(filePath string) (Geonames, error) {
 	var geonames Geonames
 	err = json.Unmarshal(fileContent, &geonames)
 	if err != nil {
-		return Geonames{}, err
+		return Geonames{}, fmt.Errorf("failed to unmarshal from json the content of the file %q: %v", filePath, err)
 	}
 
 	return geonames, nil

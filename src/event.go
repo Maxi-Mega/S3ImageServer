@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 )
 
 const (
@@ -35,7 +36,7 @@ type event struct {
 func (evt event) Json() []byte {
 	data, err := json.Marshal(evt)
 	if err != nil {
-		printError(err, false)
+		printError(fmt.Errorf("failed to marshal event to json: %v", err), false)
 	}
 	return data
 }

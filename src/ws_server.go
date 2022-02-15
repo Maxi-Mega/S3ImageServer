@@ -135,7 +135,7 @@ func (c *Client) writer() {
 func serveWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		printError(err, false)
+		printError(fmt.Errorf("failed to upgrade WS connection: %v", err), false)
 		return
 	}
 	client := &Client{hub: hub, conn: conn, send: make(chan []byte, 256)}
@@ -191,7 +191,7 @@ func reloadHandler(w http.ResponseWriter, r *http.Request, eventChan chan event)
 	// delete all cache in the filesystem
 	err := os.RemoveAll(config.CacheDir)
 	if err != nil {
-		printError(err, false)
+		printError(fmt.Errorf("failed to clear the cache on disk: %v", err), false)
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintln(w, "Failed to reload the cache, see the server's console for more details")
 		return

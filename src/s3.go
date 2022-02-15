@@ -15,7 +15,7 @@ func getFileFromBucket(minioClient *minio.Client, objKey, filePath string) error
 	defer cancel()
 	if err := minioClient.FGetObject(ctx, config.S3.BucketName, objKey, filePath, minio.GetObjectOptions{}); err != nil {
 		handleS3Error(fmt.Errorf("failed to fetch file from s3 bucket => exit: %v", err))
-		return err
+		return fmt.Errorf("failed to fetch file from s3 bucket: %v", err)
 	}
 	return nil
 }
@@ -96,7 +96,7 @@ func getGeonamesFileFromBucket(minioClient *minio.Client, objKey, formattedFilen
 func deleteFileFromCache(fileName string) {
 	err := os.Remove(path.Join(config.CacheDir, fileName))
 	if err != nil && !os.IsNotExist(err) {
-		printError(err, false)
+		printError(fmt.Errorf("failed to delete file from cache: %v", err), false)
 	}
 	printDebug("Removed", fileName, "from cache")
 }
@@ -210,7 +210,7 @@ func pollBucket(minioClient *minio.Client, eventChan chan event) {
 			pollMutex.Lock()
 			err := extractFilesFromBucket(minioClient, eventChan)
 			if err != nil {
-				printError(err, false)
+				printError(fmt.Errorf("failed to extract files from bucket: %v", err), false)
 			}
 			pollMutex.Unlock()
 		}

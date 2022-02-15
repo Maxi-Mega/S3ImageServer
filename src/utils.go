@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/minio/minio-go/v7"
 	"io/fs"
 	"net/http"
@@ -80,7 +81,7 @@ func generateImagesCache() map[string]time.Time {
 		return nil
 	})
 	if err != nil {
-		printError(err, false)
+		printError(fmt.Errorf("failed to generate images cache: %v", err), false)
 	}
 	return cache
 }
@@ -103,7 +104,7 @@ func getFullProductImageLink(minioClient *minio.Client, objKey string) string {
 	if config.FullProductSignedUrl {
 		signedUrl, err := minioClient.PresignedGetObject(context.Background(), config.S3.BucketName, objKey, 7*24*time.Hour, url.Values{})
 		if err != nil {
-			printError(err, false)
+			printError(fmt.Errorf("failed to get a presigned object url: %v", err), false)
 			return ""
 		}
 		newSignedUrl := strings.TrimPrefix(signedUrl.String(), signedUrl.Scheme+"://"+signedUrl.Host)
@@ -132,6 +133,6 @@ func prettier(w http.ResponseWriter, message string, data interface{}, status in
 		Data:    data,
 	})
 	if err != nil {
-		printError(err, false)
+		printError(fmt.Errorf("failed to marshal http response to json: %v", err), false)
 	}
 }
