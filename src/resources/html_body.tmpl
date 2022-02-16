@@ -113,6 +113,33 @@
                 font-family: "DejaVu Sans", sans-serif;
             }
 
+            #modal .previous-next-image-container {
+                position: absolute;
+                top: 40px;
+                right: 20px;
+                margin-right: 5px;
+            }
+
+            #modal .previous-next-image-container > span {
+                color: #bbbbbb;
+                font-size: 2em;
+                cursor: pointer;
+                -webkit-touch-callout: none;
+                -webkit-user-select: none;
+                -khtml-user-select: none;
+                -moz-user-select: none;
+                -ms-user-select: none;
+                user-select: none;
+            }
+
+            #modal .previous-next-image-container > span:hover {
+                color: white;
+            }
+
+            #modal .previous-next-image-container > span:active {
+                font-weight: bold;
+            }
+
             #modal-content {
                 min-width: 50%;
                 max-width: 90%;
@@ -237,6 +264,10 @@
         {{end}}
     </div>
     <div id="modal" title="Click to close">
+        <div class="previous-next-image-container">
+            <span id="previous-image-button" title="Previous image">&slarr;</span>
+            <span id="next-image-button" title="Next image">&srarr;</span>
+        </div>
         <div id="modal-content">
             <img id="modal-img" src="" alt=""/>
             <div id="modal-details">
@@ -274,6 +305,29 @@
             document.querySelectorAll("a.img-title").forEach(title => title.style.fontSize = fontSize);
         }
 
+        function switchToImage(relativeIndex) {
+            if (!modalImg.classList.contains("show")) {
+                return;
+            }
+            const currentImageSrc = modalImg.src;
+            const allImages = Array.from(document.querySelectorAll("div.img-container:not(.filter-hidden):not(.search-hidden)")).map(div => div.firstElementChild);
+
+            for (let i = 0; i < allImages.length; i++) {
+                if (allImages[i].src === currentImageSrc) {
+                    const targetImageIndex = i + relativeIndex;
+                    closeModal();
+                    if (targetImageIndex < 0) {
+                        modalize(allImages[allImages.length - 1]);
+                    } else if (targetImageIndex >= allImages.length) {
+                        modalize(allImages[0]);
+                    } else {
+                        modalize(allImages[targetImageIndex]);
+                    }
+                    return;
+                }
+            }
+        }
+
         document.addEventListener("DOMContentLoaded", () => {
 
             countImages();
@@ -294,6 +348,15 @@
             });
 
             updateScale();
+
+            document.getElementById("previous-image-button").addEventListener("click", (ev) => {
+                ev.stopImmediatePropagation();
+                switchToImage(-1);
+            });
+            document.getElementById("next-image-button").addEventListener("click", (ev) => {
+                ev.stopImmediatePropagation();
+                switchToImage(1);
+            });
         });
     </script>
 {{end}}

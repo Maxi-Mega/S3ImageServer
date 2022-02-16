@@ -50,7 +50,6 @@
                         formattedLink = formattedLink.substring(0, formattedLink.indexOf("?"));
                     }
                     if (formattedLink.indexOf(fullProductExtension) !== -1) {
-                        console.info(formattedLink);
                         formattedLink = formattedLink.substring(0, formattedLink.indexOf(fullProductExtension) + fullProductExtension.length);
                     }
                     a.innerText = formattedLink;
@@ -160,6 +159,14 @@
         }).catch(reason => console.error("Failed to fetch images list:", reason)).finally(() => displayNewImages = true);
     }
 
+    function closeModal() {
+        modalImg.classList.remove("show");
+        modal.style.display = "";
+        document.getElementById("modal-links-title").style.display = "none";
+        document.getElementById("geonames-title").style.display = "none";
+        document.getElementById("geonames").style.display = "none";
+    }
+
     document.addEventListener("DOMContentLoaded", () => {
         document.querySelectorAll(".img-title").forEach(a => {
             a.innerText = formatTitle(a.innerText);
@@ -181,11 +188,7 @@
             }
         });
         modal.addEventListener("click", () => {
-            modalImg.classList.remove("show");
-            modal.style.display = "";
-            document.getElementById("modal-links-title").style.display = "none";
-            document.getElementById("geonames-title").style.display = "none";
-            document.getElementById("geonames").style.display = "none";
+            closeModal();
         });
         document.getElementById("modal-links").addEventListener("click", ev => {
             ev.stopPropagation();
