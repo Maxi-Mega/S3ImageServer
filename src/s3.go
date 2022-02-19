@@ -59,7 +59,10 @@ func getImageFromBucket(minioClient *minio.Client, objKey, formattedKey string, 
 
 func getGeonamesFileFromBucket(minioClient *minio.Client, objKey, formattedFilename, targetImg string, eventChan chan event) error {
 	filePath := path.Join(config.CacheDir, formattedFilename)
-	getFileFromBucket(minioClient, objKey, filePath)
+	err := getFileFromBucket(minioClient, objKey, filePath)
+	if err != nil {
+		return err
+	}
 	if timer, found := timers[formattedFilename]; found {
 		timer.Stop()
 	}
@@ -118,6 +121,7 @@ func listMetaFiles(minioClient *minio.Client, dirs map[string]string, eventChan 
 	printDebug(fmt.Sprintf("Looking for meta files in bucket [%s] ...", config.S3.BucketName))
 	tempFullProductLinksCache := map[string][]string{}
 	for dir, targetImg := range dirs {
+		// logger.Info().Msg("Dir: " + dir)
 		func() {
 			tempFullProductLinksCache[dir] = []string{}
 			ctx, cancel := context.WithTimeout(context.Background(), config.PollingPeriod)
@@ -155,7 +159,9 @@ func listMetaFiles(minioClient *minio.Client, dirs map[string]string, eventChan 
 }
 
 func extractFilesFromBucket(minioClient *minio.Client, eventChan chan event) error {
-	// log(fmt.Sprintf("Looking for images in bucket [%s] ...", config.S3.BucketName))
+	pollMutex.Lock()
+	defer pollMutex.Unlock()
+	logger.Info().Msg(fmt.Sprintf("Looking for images in bucket [%s] ...", config.S3.BucketName))
 	// previewBaseDirs := []string{}
 	previewBaseDirs := map[string]string{}
 	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
@@ -207,12 +213,12 @@ func pollBucket(minioClient *minio.Client, eventChan chan event) {
 		for {
 			time.Sleep(config.PollingPeriod - time.Since(startTime))
 			startTime = time.Now()
-			pollMutex.Lock()
+			// pollMutex.Lock()
 			err := extractFilesFromBucket(minioClient, eventChan)
 			if err != nil {
 				printError(fmt.Errorf("failed to extract files from bucket: %v", err), false)
 			}
-			pollMutex.Unlock()
+			// pollMutex.Unlock()
 		}
 	}()
 	printInfo("Started polling")

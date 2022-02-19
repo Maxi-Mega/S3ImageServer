@@ -104,5 +104,4 @@ func handleS3Error(err error) {
 	if config.ExitOnS3Error {
 		exitWithError(err)
 	}
-	// printError(err, false)
 }
