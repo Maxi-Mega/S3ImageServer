@@ -22,7 +22,7 @@
     function formatTitle(title) {
         let kPrefix = keyPrefix.length > 0 ? keyPrefix + "@" : "";
         for (const imageType of imageTypes) {
-            if (title.startsWith(kPrefix + imageType)) {
+            if (title.startsWith(kPrefix + imageType.name)) {
                 title = title.substring(prefixName.length === 0 ? 0 : prefixName.length + 1, title.lastIndexOf("@")).replaceAll("@", "/"); // .replace("/" + previewFilename, "");
                 const imgType = title.substring(0, title.indexOf("/"));
                 const imgName = title.substring(title.lastIndexOf("/") + 1);
@@ -80,10 +80,11 @@
         modalImg.alt = img.alt;
         const parentDiv = img.parentElement;
         let imgName = formatTitle(parentDiv.getAttribute("img-name"));
-        if (imageTypes.includes(imgName.substring(0, imgName.indexOf("\n")))) {
+        if (imageTypes.map(imgType => imgType.name).includes(imgName.substring(0, imgName.indexOf("\n")))) {
             imgName = imgName.substring(imgName.indexOf("\n") + 1);
         }
-        document.getElementById("modal-img-type").innerText = "Type: " + parentDiv.getAttribute("img-type");
+        const rawType = parentDiv.getAttribute("img-type");
+        document.getElementById("modal-img-type").innerText = "Type: " + imageTypes.find(imgType => imgType.name === rawType).displayName;
         document.getElementById("modal-img-name").innerText = "Name: " + imgName;
         modal.style.display = "flex";
     }
@@ -196,7 +197,8 @@
 
         document.querySelectorAll(".filters input[type=checkbox]").forEach(inpt => {
             inpt.checked = true;
-            const value = inpt.parentElement.innerText.trim();
+            // const value = inpt.parentElement.innerText.trim();
+            const value = inpt.name;
             inputs[value] = inpt;
             inpt.addEventListener("input", () => {
                 if (inpt.checked) {
@@ -227,7 +229,7 @@
 
         if (window["WebSocket"]) {
             const wsProtocol = location.protocol === "https:" ? "wss:" : "ws:";
-            const conn = new WebSocket(wsProtocol + "//" + document.location.host + ("{{.BasePath}}".length > 0 ? "{{.BasePath}}/":"") + "/ws");
+            const conn = new WebSocket(wsProtocol + "//" + document.location.host + ("{{.BasePath}}".length > 0 ? "{{.BasePath}}/" : "") + "/ws");
             conn.onerror = function (evt) {
                 console.error("WebSocket connection error:", evt);
             };

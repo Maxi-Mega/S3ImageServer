@@ -23,7 +23,7 @@ type templateData struct {
 	PreviewFilename        string
 	KeyPrefix              string
 	FullProductExtension   string
-	ImageTypes             []string
+	ImageTypes             []ImageType
 	RetentionPeriod        float64
 	PollingPeriod          float64
 }

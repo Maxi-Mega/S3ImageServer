@@ -26,19 +26,24 @@ type S3Config struct {
 	UseSSL       bool   `yaml:"useSSL"`
 }
 
+type ImageType struct {
+	Name        string `yaml:"name" json:"name"`
+	DisplayName string `yaml:"displayName" json:"displayName"`
+}
+
 type Config struct {
 	S3 S3Config `yaml:"s3"`
 
-	BasePath               string   `yaml:"basePath"`
-	WindowTitle            string   `yaml:"windowTitle"`
-	ScaleInitialPercentage uint8    `yaml:"scaleInitialPercentage"`
-	PreviewFilename        string   `yaml:"previewFilename"`
-	GeonamesFilename       string   `yaml:"geonamesFilename"`
-	FullProductExtension   string   `yaml:"fullProductExtension"`
-	FullProductProtocol    string   `yaml:"fullProductProtocol"`
-	FullProductRootUrl     string   `yaml:"fullProductRootUrl"`
-	FullProductSignedUrl   bool     `yaml:"fullProductSignedUrl"`
-	ImageTypes             []string `yaml:"imageTypes"`
+	BasePath               string      `yaml:"basePath"`
+	WindowTitle            string      `yaml:"windowTitle"`
+	ScaleInitialPercentage uint8       `yaml:"scaleInitialPercentage"`
+	PreviewFilename        string      `yaml:"previewFilename"`
+	GeonamesFilename       string      `yaml:"geonamesFilename"`
+	FullProductExtension   string      `yaml:"fullProductExtension"`
+	FullProductProtocol    string      `yaml:"fullProductProtocol"`
+	FullProductRootUrl     string      `yaml:"fullProductRootUrl"`
+	FullProductSignedUrl   bool        `yaml:"fullProductSignedUrl"`
+	ImageTypes             []ImageType `yaml:"imageTypes"`
 
 	LogLevel      string                 `yaml:"logLevel"`
 	ColorLogs     bool                   `yaml:"colorLogs"`
@@ -190,7 +195,7 @@ func (config Config) String() string {
 	result += "fullProductProtocol: " + config.FullProductProtocol + "\n"
 	result += "fullProductRootUrl: " + config.FullProductRootUrl + "\n"
 	result += "fullProductSignedUrl: " + strconv.FormatBool(config.FullProductSignedUrl) + "\n"
-	result += "imageTypes: " + strings.Join(config.ImageTypes, ", ") + "\n"
+	result += "imageTypes: " + joinStructs(config.ImageTypes, ", ", false) + "\n"
 	result += fmt.Sprintf("logLevel: %s\ncolorLogs: %v\njsonLogFormat: %v\njsonLogFields: %v\nhttpTrace: %v\nexitOnS3Error: %v\n", config.LogLevel, config.ColorLogs, config.JsonLogFormat, config.JsonLogFields, config.HttpTrace, config.ExitOnS3Error)
 	result += fmt.Sprintf("cacheDir: %s\npollingMode: %v\npollingPeriod: %v\nwebServerPort: %d\n", config.CacheDir, config.PollingMode, config.PollingPeriod, config.WebServerPort)
 	return result

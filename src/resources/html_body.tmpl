@@ -33,8 +33,13 @@
                 align-items: center;
             }
 
+            #header-right {
+                display: flex;
+                align-items: center;
+            }
+
             header label {
-                margin-left: 40px;
+                margin-left: 20px;
                 color: #e4d3c1;
                 font-size: 14px;
             }
@@ -45,8 +50,20 @@
                 margin: 0;
             }
 
-            .filters input#search {
+            #search {
                 opacity: 0.5;
+            }
+
+            #img-count {
+                margin-right: 20px;
+            }
+
+            #scaler-container {
+                margin-right: 10px;
+            }
+
+            #scaler {
+                max-width: 100px;
             }
 
             header #version {
@@ -54,6 +71,7 @@
                 font-size: 12px;
                 align-self: center;
                 transform: translateX(-25%);
+                margin-left: 30px;
             }
 
             .container {
@@ -234,23 +252,25 @@
         <div class="filters">
             {{range .ImageTypes}}
                 <label>
-                    <input type="checkbox">
-                    {{.}}
+                    <input type="checkbox" name="{{.Name}}">
+                    {{.DisplayName}}
                 </label>
             {{end}}
+        </div>
+        <div id="header-right">
             <label for="search" style="padding-left: 50px">
                 Search:
-                <input id="search" type="text" title="Included in image name, case insensitive">
+                <input id="search" type="text" size="15" title="Included in image name, case insensitive">
             </label>
             <label id="img-count" title="visible/total"></label>
+            <div id="scaler-container">
+                <label for="scaler" title="Middleclick to reset">
+                    <span>Scale:&nbsp;</span>
+                    <input id="scaler" type="range" min="10" max="30" step="1">
+                </label>
+            </div>
+            <div id="version">Version: {{.Version}}</div>
         </div>
-        <div id="scaler-container">
-            <label for="scaler" title="Middleclick to reset">
-                <span>Scale:&nbsp;</span>
-                <input id="scaler" type="range" min="10" max="30" step="1">
-            </label>
-        </div>
-        <div id="version">Version: {{.Version}}</div>
     </header>
     <div class="container">
         {{$basePath := .BasePath}}

@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"time"
 )
@@ -135,4 +136,35 @@ func prettier(w http.ResponseWriter, message string, data interface{}, status in
 	if err != nil {
 		printError(fmt.Errorf("failed to marshal http response to json: %v", err), false)
 	}
+}
+
+func joinStructs(structs interface{}, sep string, displayFieldName bool) (joined string) {
+	vStructs := reflect.ValueOf(structs)
+	if vStructs.Kind() != reflect.Slice {
+		return ""
+	}
+
+	for i := 0; i < vStructs.Len(); i++ {
+		val := vStructs.Index(i)
+		if val.Kind() != reflect.Struct { // not a struct
+			continue
+		}
+
+		for fi := 0; fi < val.Type().NumField(); fi++ {
+			if displayFieldName {
+				fieldName := val.Type().Field(fi).Name
+				joined += fieldName + ": "
+			}
+			fieldValue := val.Field(fi).Interface()
+			joined += fmt.Sprint(fieldValue)
+			if fi < val.Type().NumField()-1 {
+				joined += "/"
+			}
+		}
+
+		if i < vStructs.Len()-1 {
+			joined += sep
+		}
+	}
+	return joined
 }
