@@ -1,7 +1,7 @@
 s3:
     endPoint: "192.168.0.27:9000"
     bucketName: "my-bucket"
-    keyPrefix: "my-prefix"
+    # keyPrefix: "my-prefix"
     accessId: "admin"
     accessSecret: "password"
     useSSL: false                 # Not tested
@@ -17,10 +17,13 @@ fullProductSignedUrl: false
 imageTypes:
     -   name: "TYPE1"
         displayName: "Type 1"
+        path: "my-prefix/TYPE1"
     -   name: "TYPE2"
         displayName: "Type 2"
+        path: "my-prefix/TYPE2"
     -   name: "TYPE3"
         displayName: "Type 3"
+        path: "my-prefix/TYPE3"
 
 logLevel: "info"
 colorLogs: false
@@ -32,6 +35,7 @@ httpTrace: false
 exitOnS3Error: false
 cacheDir: ""        # Nothing = default
 retentionPeriod: 10m
+maxImagesDisplayCount: 10
 pollingMode: false
 pollingPeriod: 30s
 webServerPort: 9999

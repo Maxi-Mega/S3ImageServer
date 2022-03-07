@@ -18,9 +18,9 @@ var defaultConfigFile string
 
 // S3Config is the directly related part of the global config
 type S3Config struct {
-	EndPoint     string `yaml:"endPoint"`
-	BucketName   string `yaml:"bucketName"`
-	KeyPrefix    string `yaml:"keyPrefix"`
+	EndPoint   string `yaml:"endPoint"`
+	BucketName string `yaml:"bucketName"`
+	// KeyPrefix    string `yaml:"keyPrefix"`
 	AccessId     string `yaml:"accessId"`
 	AccessSecret string `yaml:"accessSecret"`
 	UseSSL       bool   `yaml:"useSSL"`
@@ -29,6 +29,7 @@ type S3Config struct {
 type ImageType struct {
 	Name        string `yaml:"name" json:"name"`
 	DisplayName string `yaml:"displayName" json:"displayName"`
+	Path        string `yaml:"path" json:"path"`
 }
 
 type Config struct {
@@ -52,11 +53,12 @@ type Config struct {
 	HttpTrace     bool                   `yaml:"httpTrace"`
 	ExitOnS3Error bool                   `yaml:"exitOnS3Error"`
 
-	CacheDir        string        `yaml:"cacheDir"`
-	RetentionPeriod time.Duration `yaml:"retentionPeriod"`
-	PollingMode     bool          `yaml:"pollingMode"`
-	PollingPeriod   time.Duration `yaml:"pollingPeriod"`
-	WebServerPort   uint16        `yaml:"webServerPort"`
+	CacheDir              string        `yaml:"cacheDir"`
+	RetentionPeriod       time.Duration `yaml:"retentionPeriod"`
+	MaxImagesDisplayCount int           `yaml:"maxImagesDisplayCount"`
+	PollingMode           bool          `yaml:"pollingMode"`
+	PollingPeriod         time.Duration `yaml:"pollingPeriod"`
+	WebServerPort         uint16        `yaml:"webServerPort"`
 }
 
 var defaultConfig = Config{
@@ -115,8 +117,7 @@ func (config *Config) loadDefaults() {
 	}
 }
 
-func (config *Config) checkValidity() (bool, []string) {
-	errs := []string{}
+func (config *Config) checkValidity() (ok bool, errs []string) {
 	if config.S3.EndPoint == "" {
 		errs = append(errs, "no s3 endpoint provided")
 	}
@@ -185,7 +186,7 @@ func loadConfigFromFile(filePath string) (Config, error) {
 func (config Config) String() string {
 	result := "S3:\n"
 	s3 := config.S3
-	result += fmt.Sprintf("\tendPoint: %s\n\tbucketName: %s\n\tkeyPrefix: %s\n\taccessId: %s\n\taccessSecret: %s\n", s3.EndPoint, s3.BucketName, s3.KeyPrefix, s3.AccessId, s3.AccessSecret)
+	result += fmt.Sprintf("\tendPoint: %s\n\tbucketName: %s\n\taccessId: %s\n\taccessSecret: %s\n", s3.EndPoint, s3.BucketName, s3.AccessId, s3.AccessSecret)
 	result += "basePath: " + config.BasePath + "\n"
 	result += "windowTitle: " + config.WindowTitle + "\n"
 	result += "scaleInitialPercentage: " + strconv.FormatUint(uint64(config.ScaleInitialPercentage), 10) + "\n"
@@ -197,7 +198,7 @@ func (config Config) String() string {
 	result += "fullProductSignedUrl: " + strconv.FormatBool(config.FullProductSignedUrl) + "\n"
 	result += "imageTypes: " + joinStructs(config.ImageTypes, ", ", false) + "\n"
 	result += fmt.Sprintf("logLevel: %s\ncolorLogs: %v\njsonLogFormat: %v\njsonLogFields: %v\nhttpTrace: %v\nexitOnS3Error: %v\n", config.LogLevel, config.ColorLogs, config.JsonLogFormat, config.JsonLogFields, config.HttpTrace, config.ExitOnS3Error)
-	result += fmt.Sprintf("cacheDir: %s\npollingMode: %v\npollingPeriod: %v\nwebServerPort: %d\n", config.CacheDir, config.PollingMode, config.PollingPeriod, config.WebServerPort)
+	result += fmt.Sprintf("cacheDir: %s\nretentionPeriod: %v\nmaxImagesDisplayCount: %d\npollingMode: %v\npollingPeriod: %v\nwebServerPort: %d\n", config.CacheDir, config.RetentionPeriod, config.MaxImagesDisplayCount, config.PollingMode, config.PollingPeriod, config.WebServerPort)
 	return result
 }
 

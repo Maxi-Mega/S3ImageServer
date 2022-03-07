@@ -24,17 +24,17 @@ func getImageId(name string, date time.Time) string {
 	return name + "_" + date.Format(time.RFC3339)
 }
 
-func getImageType(imgName string) string {
+/*func getImageType(imgName string) string {
 	imgName = strings.TrimPrefix(imgName, "PREVIEW@")
 	imgName = imgName[:strings.Index(imgName, "@")]
 	return imgName
-}
+}*/
 
 func formatFileName(imgPath string) string {
 	return strings.ReplaceAll(imgPath, "/", "@")
 }
 
-func getImagesList() []EventObject {
+/*func getImagesList() []EventObject {
 	images := []EventObject{}
 
 imagesCacheLoop:
@@ -55,11 +55,17 @@ imagesCacheLoop:
 		images = append(images, imgToDoObj) // insert new img at the end if it has the oldest date
 	}
 
-	return images
-}
+	if config.MaxImagesDisplayCount > 0 && len(images) > config.MaxImagesDisplayCount {
+		limit := len(images) - config.MaxImagesDisplayCount
+		return images[limit:] // keep only the n first images, n being the max images display count
+	}
 
-func generateImagesCache() map[string]time.Time {
-	cache := map[string]time.Time{}
+	return images
+}*/
+
+// func generateImagesCache() map[string]time.Time {
+func generateImagesCache() S3Images {
+	cache := S3Images{}
 	err := filepath.WalkDir(config.CacheDir, func(imagePath string, file fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -77,7 +83,8 @@ func generateImagesCache() map[string]time.Time {
 		}
 		if strings.HasSuffix(imagePath, config.PreviewFilename) {
 			// images = append(images, getJustFileName(imagePath))
-			cache[formatFileName(strings.TrimPrefix(strings.TrimPrefix(imagePath, config.CacheDir), string(os.PathSeparator)))] = info.ModTime()
+			// cache[formatFileName(strings.TrimPrefix(strings.TrimPrefix(imagePath, config.CacheDir), string(os.PathSeparator)))] = info.ModTime()
+			cache = append(cache, newS3ImageFromCache(imagePath, info))
 		}
 		return nil
 	})
@@ -87,7 +94,7 @@ func generateImagesCache() map[string]time.Time {
 	return cache
 }
 
-func getCorrespondingImage(objKey string) (image string, found bool) {
+/*func getCorrespondingImage(objKey string) (image string, found bool) {
 	for img := range imagesCache {
 		lastSlash := strings.LastIndex(img, "@")
 		if lastSlash < 0 {
@@ -99,7 +106,7 @@ func getCorrespondingImage(objKey string) (image string, found bool) {
 		}
 	}
 	return "", false
-}
+}*/
 
 func getFullProductImageLink(minioClient *minio.Client, objKey string) string {
 	if config.FullProductSignedUrl {
@@ -138,7 +145,7 @@ func prettier(w http.ResponseWriter, message string, data interface{}, status in
 	}
 }
 
-func joinStructs(structs interface{}, sep string, displayFieldName bool) (joined string) {
+func joinStructs(structs interface{}, sep string, displayFieldsName bool) (joined string) {
 	vStructs := reflect.ValueOf(structs)
 	if vStructs.Kind() != reflect.Slice {
 		return ""
@@ -151,7 +158,7 @@ func joinStructs(structs interface{}, sep string, displayFieldName bool) (joined
 		}
 
 		for fi := 0; fi < val.Type().NumField(); fi++ {
-			if displayFieldName {
+			if displayFieldsName {
 				fieldName := val.Type().Field(fi).Name
 				joined += fieldName + ": "
 			}
@@ -167,4 +174,18 @@ func joinStructs(structs interface{}, sep string, displayFieldName bool) (joined
 		}
 	}
 	return joined
+}
+
+func clearDir(dir string) error {
+	files, err := filepath.Glob(filepath.Join(dir, "*"))
+	if err != nil {
+		return err
+	}
+	for _, file := range files {
+		err = os.RemoveAll(file)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

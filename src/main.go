@@ -11,13 +11,14 @@ import (
 	"time"
 )
 
-const version = "2.1.2"
+const version = "2.2.0"
 
 const defaultTempDirName = "s3_image_server"
 
 var config Config
 
-var imagesCache map[string]time.Time
+// var imagesCache map[string]time.Time
+var imagesCache S3Images
 var imagesCacheMutex sync.Mutex
 var timers map[string]*time.Timer
 var timersMutex sync.Mutex
@@ -93,7 +94,8 @@ func main() {
 		if err != nil {
 			exitWithError(err)
 		}
-		imagesCache = map[string]time.Time{}
+		// imagesCache = map[string]time.Time{}
+		imagesCache = S3Images{}
 	} else {
 		imagesCache = generateImagesCache()
 	}

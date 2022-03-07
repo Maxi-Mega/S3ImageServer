@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/gorilla/websocket"
 	"net/http"
-	"os"
 	"strconv"
 	"time"
 )
@@ -159,19 +158,19 @@ func websocketHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	executeTemplate(w, tmpl, templateData{
 		Version:                version,
-		BasePath:               config.BasePath,
 		WindowTitle:            config.WindowTitle,
 		ScaleInitialPercentage: config.ScaleInitialPercentage,
 		BucketName:             config.S3.BucketName,
-		PrefixName:             config.S3.KeyPrefix,
-		Previews:               getImagesList(),
-		PreviewsWithTime:       imagesCache,
-		PreviewFilename:        config.PreviewFilename,
-		FullProductExtension:   config.FullProductExtension,
-		KeyPrefix:              config.S3.KeyPrefix,
-		ImageTypes:             config.ImageTypes,
-		RetentionPeriod:        config.RetentionPeriod.Seconds(),
-		PollingPeriod:          config.PollingPeriod.Seconds(),
+		PrefixName:             "config.S3.KeyPrefix",
+		Previews:               imagesCache.toEventObjects(),
+		// PreviewsWithTime:       imagesCache, TODO: add time to EventObject ?
+		PreviewFilename:       config.PreviewFilename,
+		FullProductExtension:  config.FullProductExtension,
+		KeyPrefix:             "config.S3.KeyPrefix",
+		ImageTypes:            config.ImageTypes,
+		MaxImagesDisplayCount: config.MaxImagesDisplayCount,
+		RetentionPeriod:       config.RetentionPeriod.Seconds(),
+		PollingPeriod:         config.PollingPeriod.Seconds(),
 	})
 }
 
@@ -189,7 +188,7 @@ func reloadHandler(w http.ResponseWriter, r *http.Request, eventChan chan event)
 	defer fullProductLinksCacheMutex.Unlock()
 
 	// delete all cache in the filesystem
-	err := os.RemoveAll(config.CacheDir)
+	err := clearDir(config.CacheDir)
 	if err != nil {
 		printError(fmt.Errorf("failed to clear the cache on disk: %v", err), false)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -198,7 +197,7 @@ func reloadHandler(w http.ResponseWriter, r *http.Request, eventChan chan event)
 	}
 
 	// clear all caches in ram
-	imagesCache = map[string]time.Time{}
+	imagesCache = S3Images{}
 	for timerKey, timer := range timers {
 		timer.Stop()
 		delete(timers, timerKey)
@@ -212,6 +211,7 @@ func reloadHandler(w http.ResponseWriter, r *http.Request, eventChan chan event)
 		EventDate: time.Now().String(),
 	}
 
+	printInfo("Reload done !")
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintln(w, "Reload done !")
 }

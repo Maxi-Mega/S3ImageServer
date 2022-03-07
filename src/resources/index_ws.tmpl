@@ -1,6 +1,6 @@
 {{template "html_body" .}}
 <script>
-    const images = {{.PreviewsWithTime}};
+    const images = {{.Previews}};
     const previewFilename = {{.PreviewFilename}};
     const prefixName = {{.PrefixName}};
     const keyPrefix = {{.KeyPrefix}};
@@ -8,6 +8,7 @@
     const imageTypes = {{.ImageTypes}};
     const retentionPeriod = {{.RetentionPeriod}}; // in seconds
     const refreshPeriod = {{.PollingPeriod}}; // in seconds
+    const maxImagesDisplayCount = {{.MaxImagesDisplayCount}};
 
     const inputs = {};
     const searchInput = document.getElementById("search");
@@ -20,12 +21,17 @@
     let imagesGeonamesToDisplay = {};
 
     function formatTitle(title) {
+        if (title.includes("@")) {
+            title = title.substring(0, title.lastIndexOf("@"));
+            title = title.substring(title.lastIndexOf("@") + 1);
+            return title;
+        }
         let kPrefix = keyPrefix.length > 0 ? keyPrefix + "@" : "";
         for (const imageType of imageTypes) {
             if (title.startsWith(kPrefix + imageType.name)) {
                 title = title.substring(prefixName.length === 0 ? 0 : prefixName.length + 1, title.lastIndexOf("@")).replaceAll("@", "/"); // .replace("/" + previewFilename, "");
-                const imgType = title.substring(0, title.indexOf("/"));
-                const imgName = title.substring(title.lastIndexOf("/") + 1);
+                const imgType = title.substring(0, title.indexOf("@"));
+                const imgName = title.substring(title.lastIndexOf("@") + 1);
                 return imgType + "\n" + imgName;
             }
         }
@@ -80,20 +86,22 @@
         modalImg.alt = img.alt;
         const parentDiv = img.parentElement;
         let imgName = formatTitle(parentDiv.getAttribute("img-name"));
-        if (imageTypes.map(imgType => imgType.name).includes(imgName.substring(0, imgName.indexOf("\n")))) {
+        /*if (imageTypes.map(imgType => imgType.name).includes(imgName.substring(0, imgName.indexOf("\n")))) {
             imgName = imgName.substring(imgName.indexOf("\n") + 1);
-        }
+        }*/
         const rawType = parentDiv.getAttribute("img-type");
+        console.info("ImageTypes:", imageTypes); // TODO: check what it prints
         document.getElementById("modal-img-type").innerText = "Type: " + imageTypes.find(imgType => imgType.name === rawType).displayName;
         document.getElementById("modal-img-name").innerText = "Name: " + imgName;
         modal.style.display = "flex";
     }
 
     function addNewImg(img, date, addToList = true) {
+        const imgKey = img["img_key"]
         const newImg = document.createElement("img");
-        newImg.src = "{{.BasePath}}/image/" + img["img_key"] + "?time=" + Date.now();
-        newImg.alt = img["img_key"];
-        const previewParts = img["img_key"].split("@");
+        newImg.src = "{{.BasePath}}/image/" + imgKey + "?time=" + Date.now();
+        newImg.alt = imgKey;
+        const previewParts = imgKey.split("@");
         if (previewParts.length >= 2) {
             newImg.title = previewParts[previewParts.length - 2];
         }
@@ -101,7 +109,7 @@
         newImg.addEventListener("click", () => modalize(newImg));
         const newA = document.createElement("a");
         newA.classList.add("img-title");
-        newA.href = "{{.BasePath}}/image/" + img["img_key"];
+        newA.href = "{{.BasePath}}/image/" + imgKey;
         newA.target = "_blank";
         newA.title = "Click to open the image in a new tab";
         newA.style.fontSize = currentFontSize;
@@ -112,7 +120,7 @@
         newDiv.appendChild(newA);
         const imgType = img["img_type"]; // img.substring(prefixName.length === 0 ? 0 : prefixName.length + 1).split("@")[0];
         newDiv.setAttribute("img-type", imgType);
-        newDiv.setAttribute("img-name", img["img_key"]); // imgTitle.substring(imgTitle.indexOf("\n") + 1)
+        newDiv.setAttribute("img-name", imgKey); // imgTitle.substring(imgTitle.indexOf("\n") + 1)
         if (inputs.hasOwnProperty(imgType)) {
             if (!inputs[imgType].checked) {
                 newDiv.classList.add("filter-hidden");
@@ -126,8 +134,16 @@
         }
 
         container.insertBefore(newDiv, container.firstChild);
+        if (container.childElementCount > maxImagesDisplayCount) {
+            container.removeChild(container.lastElementChild);
+        }
         if (addToList) {
-            images[img["img_key"]] = date;
+            // images[img["img_key"]] = date;
+            images.unshift({
+                "img_type": imgType,
+                "img_key": imgKey,
+                "img_name": imagesGeonamesToDisplay.hasOwnProperty(img[0]) ? imagesGeonamesToDisplay[img[0]] : img[0],
+            })
         }
         countImages();
         newImg.onerror = () => {
@@ -170,18 +186,32 @@
 
     document.addEventListener("DOMContentLoaded", () => {
         document.querySelectorAll(".img-title").forEach(a => {
-            a.innerText = formatTitle(a.innerText);
+            let imgName = a.innerText
+            if (imgName.includes("@")) {
+                imgName = imgName.substring(0, imgName.lastIndexOf("@"));
+                imgName = imgName.substring(imgName.lastIndexOf("@") + 1);
+                a.innerText = imgName; // formatTitle(a.innerText);
+            }
             /*a.parentElement.setAttribute("img-type", a.innerText.split("\n")[0]);
             a.parentElement.setAttribute("img-name", imgTitle.substring(imgTitle.indexOf("\n") + 1));*/
         });
         document.querySelectorAll("img:not(#modal-img)").forEach(img => {
             img.addEventListener("click", () => modalize(img));
             setTimeout(() => {
-                if (images.hasOwnProperty(img.src)) {
+                for (let i in images) {
+                    if (img.src.endsWith(images[i].img_key)) {
+                        console.info("Removing image '" + img.src + "' after timeout.");
+                        container.removeChild(img.parentElement);
+                        images.splice(i, 1);
+                        countImages();
+                        break;
+                    }
+                }
+                /*if (images.hasOwnProperty(img.src)) {
                     container.removeChild(img.parentElement);
                     delete images[img.src];
                     countImages();
-                }
+                }*/
             }, retentionPeriod * 1000);
             const previewParts = img.title.split("@");
             if (previewParts.length >= 2) {
@@ -217,7 +247,7 @@
                 document.querySelectorAll("div.search-hidden").forEach(container => container.classList.remove("search-hidden"));
             } else {
                 document.querySelectorAll("div > a.img-title").forEach(a => {
-                    if (a.innerText.toLowerCase().includes(value) || a.href.toLowerCase().substring("/image/".length).includes(value)) {
+                    if (a.href.toLowerCase().substring((location.href.length - 1) + "{{.BasePath}}/image/".length).includes(value)) {
                         a.parentElement.classList.remove("search-hidden");
                     } else {
                         a.parentElement.classList.add("search-hidden");
@@ -239,9 +269,9 @@
             conn.onmessage = function (evt) {
                 const msg = evt.data;
                 const event = JSON.parse(msg);
-                // console.info("Data update:", event);
+                console.info("Data update:", event);
                 const imgKey = event["event_obj"] != null ? event["event_obj"]["img_key"] : null;
-                const alreadyLoaded = images.hasOwnProperty(imgKey);
+                const alreadyLoaded = images.reduce((found, img) => img["img_key"] === imgKey ? true : found, false); // look for imgKey in images
                 switch (event["event_type"]) {
                     case "ADD":
                     case "UPDATE":
@@ -256,7 +286,13 @@
                     case "REMOVE":
                         if (alreadyLoaded) {
                             container.removeChild(document.querySelector(`img[src*="{{.BasePath}}/image/${imgKey}"]`).parentElement);
-                            delete images[imgKey];
+                            // delete images[imgKey];
+                            for (let i in images) {
+                                if (images[i].img_key === imgKey) {
+                                    images.splice(i, 1);
+                                    break;
+                                }
+                            }
                             countImages();
                         }
                         break;
@@ -276,9 +312,10 @@
                     case "RESET":
                         console.info("Reset !");
                         displayNewImages = false;
-                        Object.keys(images).forEach(function (key) {
+                        /*Object.keys(images).forEach(function (key) {
                             delete images[key];
-                        });
+                        });*/
+                        images.length = 0; // clear array
                         while (container.hasChildNodes()) {
                             container.removeChild(container.firstChild);
                         }

@@ -273,7 +273,7 @@
         </div>
     </header>
     <div class="container">
-        {{$basePath := .BasePath}}
+        {{- $basePath := .BasePath -}}
         {{range .Previews}}
             <div class="img-container" img-type="{{.ImgType}}" img-name="{{.ImgKey}}">
                 <img src="{{$basePath}}/image/{{.ImgKey}}" alt="{{.ImgKey}}" title="{{.ImgKey}}"/>

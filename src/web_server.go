@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"html/template"
 	"io"
 	"net/http"
@@ -24,6 +25,7 @@ type templateData struct {
 	KeyPrefix              string
 	FullProductExtension   string
 	ImageTypes             []ImageType
+	MaxImagesDisplayCount  int
 	RetentionPeriod        float64
 	PollingPeriod          float64
 }
@@ -45,6 +47,7 @@ func executeTemplate(w http.ResponseWriter, tmpl *template.Template, data interf
 	w.WriteHeader(http.StatusOK)
 	err := tmpl.Execute(w, data)
 	if err != nil {
+		printError(fmt.Errorf("failed to execute template: %v", err), false)
 		prettier(w, "Failed to execute template:"+err.Error(), nil, http.StatusInternalServerError)
 	}
 }
@@ -66,15 +69,16 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		WindowTitle:            config.WindowTitle,
 		ScaleInitialPercentage: config.ScaleInitialPercentage,
 		BucketName:             config.S3.BucketName,
-		PrefixName:             config.S3.KeyPrefix,
-		Previews:               getImagesList(),
-		PreviewsWithTime:       imagesCache,
-		PreviewFilename:        config.PreviewFilename,
-		FullProductExtension:   config.FullProductExtension,
-		KeyPrefix:              config.S3.KeyPrefix,
-		ImageTypes:             config.ImageTypes,
-		RetentionPeriod:        config.RetentionPeriod.Seconds(),
-		PollingPeriod:          config.PollingPeriod.Seconds(),
+		PrefixName:             "config.S3.KeyPrefix",
+		Previews:               imagesCache.toEventObjects(),
+		// PreviewsWithTime:       imagesCache, TODO: add time to EventObject ?
+		PreviewFilename:       config.PreviewFilename,
+		FullProductExtension:  config.FullProductExtension,
+		KeyPrefix:             "config.S3.KeyPrefix",
+		ImageTypes:            config.ImageTypes,
+		MaxImagesDisplayCount: config.MaxImagesDisplayCount,
+		RetentionPeriod:       config.RetentionPeriod.Seconds(),
+		PollingPeriod:         config.PollingPeriod.Seconds(),
 	})
 }
 
@@ -104,10 +108,10 @@ func imagesListHandler(w http.ResponseWriter, r *http.Request) {
 
 func infosHandler(w http.ResponseWriter, r *http.Request) {
 	imgName := strings.TrimPrefix(r.URL.Path, "/infos/")
-	date, found := imagesCache[imgName]
+	img, found := imagesCache.findImageByKey(strings.ReplaceAll(imgName, "@", "/"))
 	var strDate string
 	if found {
-		strDate = date.Format("2006-01-02 15:04:05")
+		strDate = img.LastModified.Format("2006-01-02 15:04:05")
 	} else {
 		strDate = "N/A"
 	}
