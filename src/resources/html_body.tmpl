@@ -31,6 +31,48 @@
             .filters {
                 display: flex;
                 align-items: center;
+                color: #e4d3c1;
+            }
+
+            .filters .img-group-dropdown {
+                margin-left: 20px;
+                color: #e4d3c1;
+                font-size: 14px;
+                -webkit-user-select: none; /* Chrome all / Safari all */
+                -moz-user-select: none; /* Firefox all */
+                -ms-user-select: none; /* IE 10+ */
+                user-select: none;
+            }
+
+            .filters .dropdown-title {
+                cursor: pointer;
+            }
+
+            .filters .img-group-dropdown.selected .dropdown-title {
+                color: white;
+            }
+
+            .filters .img-group-dropdown-content {
+                display: none;
+                flex-flow: column;
+                position: absolute;
+                background-color: #393939;
+                padding-top: 5px;
+                transform: translateX(-2px);
+            }
+
+            .filters .img-group-dropdown.selected > .img-group-dropdown-content {
+                display: flex;
+            }
+
+            .filters .img-group-dropdown-content label {
+                padding-top: 5px;
+                margin: 0 5px 5px 0;
+            }
+
+            header label {
+                color: #e4d3c1;
+                font-size: 14px;
             }
 
             #header-right {
@@ -38,10 +80,8 @@
                 align-items: center;
             }
 
-            header label {
+            #header-right label {
                 margin-left: 20px;
-                color: #e4d3c1;
-                font-size: 14px;
             }
 
             header label[for='scaler'] {
@@ -250,17 +290,25 @@
     <body>
     <header>
         <div class="filters">
-            {{range .ImageTypes}}
-                <label>
-                    <input type="checkbox" name="{{.Name}}">
-                    {{.DisplayName}}
-                </label>
+            {{range .ImageGroups}}
+                <div class="img-group-dropdown">
+                    <span class="dropdown-title">{{.GroupName}}</span>
+                    <div class="img-group-dropdown-content">
+                        {{range .Types}}
+                            <label>
+                                <input type="checkbox" name="{{.Name}}">
+                                {{.DisplayName}}
+                            </label>
+                        {{end}}
+                    </div>
+                </div>
             {{end}}
         </div>
         <div id="header-right">
             <label for="search" style="padding-left: 50px">
                 Search:
-                <input id="search" type="text" size="15" title="Included in image name, case insensitive">
+                <input id="search" type="text" size="15"
+                       title="Included in image name, case insensitive">
             </label>
             <label id="img-count" title="visible/total"></label>
             <div id="scaler-container">
@@ -349,6 +397,14 @@
         }
 
         document.addEventListener("DOMContentLoaded", () => {
+
+            document.querySelectorAll(".filters .img-group-dropdown").forEach(dropdown => {
+                const span = dropdown.querySelector("span");
+                span.addEventListener("click", () => {
+                    document.querySelectorAll(".filters .img-group-dropdown.selected").forEach(other => other !== dropdown ? other.classList.remove("selected") : null);
+                    dropdown.classList.toggle("selected");
+                });
+            });
 
             countImages();
 

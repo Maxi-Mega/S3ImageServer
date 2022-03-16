@@ -35,7 +35,7 @@ func newS3ImageFromCache(imagePath string, fileInfo fs.FileInfo) S3Image {
 
 func inferImageType(imageName string) *ImageType {
 	imageName = strings.ReplaceAll(imageName, "@", "/")
-	for _, imgType := range config.ImageTypes {
+	for _, imgType := range config.imageTypes {
 		if strings.HasPrefix(imageName, imgType.Path) {
 			return &imgType
 		}

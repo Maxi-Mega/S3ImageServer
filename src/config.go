@@ -32,19 +32,25 @@ type ImageType struct {
 	Path        string `yaml:"path" json:"path"`
 }
 
+type ImageGroup struct {
+	GroupName string      `yaml:"groupName"`
+	Types     []ImageType `yaml:"types"`
+}
+
 type Config struct {
 	S3 S3Config `yaml:"s3"`
 
-	BasePath               string      `yaml:"basePath"`
-	WindowTitle            string      `yaml:"windowTitle"`
-	ScaleInitialPercentage uint8       `yaml:"scaleInitialPercentage"`
-	PreviewFilename        string      `yaml:"previewFilename"`
-	GeonamesFilename       string      `yaml:"geonamesFilename"`
-	FullProductExtension   string      `yaml:"fullProductExtension"`
-	FullProductProtocol    string      `yaml:"fullProductProtocol"`
-	FullProductRootUrl     string      `yaml:"fullProductRootUrl"`
-	FullProductSignedUrl   bool        `yaml:"fullProductSignedUrl"`
-	ImageTypes             []ImageType `yaml:"imageTypes"`
+	BasePath               string       `yaml:"basePath"`
+	WindowTitle            string       `yaml:"windowTitle"`
+	ScaleInitialPercentage uint8        `yaml:"scaleInitialPercentage"`
+	PreviewFilename        string       `yaml:"previewFilename"`
+	GeonamesFilename       string       `yaml:"geonamesFilename"`
+	FullProductExtension   string       `yaml:"fullProductExtension"`
+	FullProductProtocol    string       `yaml:"fullProductProtocol"`
+	FullProductRootUrl     string       `yaml:"fullProductRootUrl"`
+	FullProductSignedUrl   bool         `yaml:"fullProductSignedUrl"`
+	ImageGroups            []ImageGroup `yaml:"imageGroups"`
+	imageTypes             []ImageType
 
 	LogLevel      string                 `yaml:"logLevel"`
 	ColorLogs     bool                   `yaml:"colorLogs"`
@@ -83,10 +89,14 @@ var defaultConfig = Config{
 
 func (config *Config) loadDefaults() {
 	v := reflect.ValueOf(*config)
-	for f := 0; f < v.NumField(); f++ {
-		field := v.Field(f)
-		fieldName := v.Type().Field(f).Name
-		fieldValue := field.Interface()
+	for i := 0; i < v.NumField(); i++ {
+		f := v.Field(i)
+		field := v.Type().Field(i)
+		if !field.IsExported() {
+			continue
+		}
+		fieldName := field.Name
+		fieldValue := f.Interface()
 		switch fieldName {
 		case "S3":
 		/*s3Config := fieldValue.(S3Config)
@@ -131,8 +141,33 @@ func (config *Config) checkValidity() (ok bool, errs []string) {
 		errs = append(errs, "no s3 access secret provided")
 	}
 
-	if len(config.ImageTypes) == 0 {
-		errs = append(errs, "no image type provided")
+	if len(config.ImageGroups) == 0 {
+		errs = append(errs, "no image group provided")
+	}
+
+	imageTypes := make(map[string]struct{})
+	imagePaths := make(map[string]struct{})
+	for i, group := range config.ImageGroups {
+		if group.GroupName == "" {
+			errs = append(errs, "no name provided for group n°"+strconv.Itoa(i))
+			continue
+		}
+		if len(group.Types) == 0 {
+			errs = append(errs, "no image type provided in group "+group.GroupName)
+			continue
+		}
+		for _, imageType := range group.Types {
+			if _, exists := imageTypes[imageType.Name]; exists {
+				errs = append(errs, "image type '"+imageType.Name+"' is present in multiple groups")
+			} else {
+				imageTypes[imageType.Name] = struct{}{}
+			}
+			if _, exists := imagePaths[imageType.Path]; exists {
+				errs = append(errs, "image path '"+imageType.Path+"' is present in multiple groups")
+			} else {
+				imagePaths[imageType.Path] = struct{}{}
+			}
+		}
 	}
 
 	if len(config.LogLevel) == 0 {
@@ -166,19 +201,22 @@ func loadConfigFromFile(filePath string) (Config, error) {
 	if err != nil {
 		return Config{}, err
 	}
-	for i, imgType := range cfg.ImageTypes {
-		for j, iT := range cfg.ImageTypes {
+	/*for i, imgType := range cfg.imageTypes {
+		for j, iT := range cfg.imageTypes {
 			if i != j && imgType == iT {
 				printWarn("Removed duplicate image type: ", imgType)
-				cfg.ImageTypes = append(cfg.ImageTypes[:i], cfg.ImageTypes[i+1:]...)
+				cfg.imageTypes = append(cfg.imageTypes[:i], cfg.imageTypes[i+1:]...)
 			}
 		}
-	}
+	}*/
 	cfg.LogLevel = strings.ToLower(cfg.LogLevel)
 	cfg.loadDefaults()
 	valid, errs := cfg.checkValidity()
 	if !valid {
-		return Config{}, errors.New(strings.Join(errs, ", "))
+		return Config{}, errors.New(strings.Join(errs, "\n- "))
+	}
+	for _, group := range cfg.ImageGroups {
+		cfg.imageTypes = append(cfg.imageTypes, group.Types...)
 	}
 	return cfg, nil
 }
@@ -196,7 +234,7 @@ func (config Config) String() string {
 	result += "fullProductProtocol: " + config.FullProductProtocol + "\n"
 	result += "fullProductRootUrl: " + config.FullProductRootUrl + "\n"
 	result += "fullProductSignedUrl: " + strconv.FormatBool(config.FullProductSignedUrl) + "\n"
-	result += "imageTypes: " + joinStructs(config.ImageTypes, ", ", false) + "\n"
+	result += "imageGroups: " + joinStructs(config.ImageGroups, ", ", false) + "\n"
 	result += fmt.Sprintf("logLevel: %s\ncolorLogs: %v\njsonLogFormat: %v\njsonLogFields: %v\nhttpTrace: %v\nexitOnS3Error: %v\n", config.LogLevel, config.ColorLogs, config.JsonLogFormat, config.JsonLogFields, config.HttpTrace, config.ExitOnS3Error)
 	result += fmt.Sprintf("cacheDir: %s\nretentionPeriod: %v\nmaxImagesDisplayCount: %d\npollingMode: %v\npollingPeriod: %v\nwebServerPort: %d\n", config.CacheDir, config.RetentionPeriod, config.MaxImagesDisplayCount, config.PollingMode, config.PollingPeriod, config.WebServerPort)
 	return result

@@ -142,7 +142,7 @@
             images.unshift({
                 "img_type": imgType,
                 "img_key": imgKey,
-                "img_name": imagesGeonamesToDisplay.hasOwnProperty(img[0]) ? imagesGeonamesToDisplay[img[0]] : img[0],
+                "img_name": imagesGeonamesToDisplay.hasOwnProperty(img["img_name"]) ? imagesGeonamesToDisplay[img["img_name"]] : img["img_name"],
             })
         }
         countImages();
@@ -197,7 +197,8 @@
         });
         document.querySelectorAll("img:not(#modal-img)").forEach(img => {
             img.addEventListener("click", () => modalize(img));
-            setTimeout(() => {
+            // /!\ WARNING: setTimeout() does not work with durations greater than 24 days /!\
+            /*setTimeout(() => {
                 for (let i in images) {
                     if (img.src.endsWith(images[i].img_key)) {
                         console.info("Removing image '" + img.src + "' after timeout.");
@@ -207,12 +208,12 @@
                         break;
                     }
                 }
-                /*if (images.hasOwnProperty(img.src)) {
+                /!*if (images.hasOwnProperty(img.src)) {
                     container.removeChild(img.parentElement);
                     delete images[img.src];
                     countImages();
-                }*/
-            }, retentionPeriod * 1000);
+                }*!/
+            }, retentionPeriod * 1000);*/
             const previewParts = img.title.split("@");
             if (previewParts.length >= 2) {
                 img.title = previewParts[previewParts.length - 2];
@@ -279,7 +280,14 @@
                             break;
                         }
                         if (alreadyLoaded) {
-                            container.removeChild(document.querySelector(`img[src*="{{.BasePath}}/image/${imgKey}"]`).parentElement);
+                            let imgToRemove = document.querySelector(`img[src*="{{.BasePath}}/image/${imgKey}"]`);
+                            container.removeChild(imgToRemove.parentElement);
+                            for (let i in images) {
+                                if (images[i].img_key === imgKey) {
+                                    images.splice(i, 1);
+                                    break;
+                                }
+                            }
                         }
                         addNewImg(event["event_obj"], event["event_date"]);
                         break;

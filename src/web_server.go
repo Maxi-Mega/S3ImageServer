@@ -24,6 +24,7 @@ type templateData struct {
 	PreviewFilename        string
 	KeyPrefix              string
 	FullProductExtension   string
+	ImageGroups            []ImageGroup
 	ImageTypes             []ImageType
 	MaxImagesDisplayCount  int
 	RetentionPeriod        float64
@@ -75,7 +76,8 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		PreviewFilename:       config.PreviewFilename,
 		FullProductExtension:  config.FullProductExtension,
 		KeyPrefix:             "config.S3.KeyPrefix",
-		ImageTypes:            config.ImageTypes,
+		ImageGroups:           config.ImageGroups,
+		ImageTypes:            config.imageTypes,
 		MaxImagesDisplayCount: config.MaxImagesDisplayCount,
 		RetentionPeriod:       config.RetentionPeriod.Seconds(),
 		PollingPeriod:         config.PollingPeriod.Seconds(),
