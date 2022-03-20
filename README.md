@@ -14,12 +14,11 @@ Where `config.yml` is the path to the configuration file
 
 ```yaml
 s3:
-    endPoint: "192.168.0.27:9000"
-    bucketName: "my-bucket"
-    keyPrefix: "my-prefix"
-    accessId: "admin"
-    accessSecret: "password"
-    useSSL: false                 # Not tested
+  endPoint: "127.0.0.1:9000"
+  bucketName: "my-bucket"
+  accessId: "admin"
+  accessSecret: "password"
+  useSSL: false                 # Not tested
 
 basePath: "" # Empty or starting with a slash
 windowTitle: "S3 Image Viewer"
@@ -29,21 +28,32 @@ geonamesFilename: "geonames.json"
 fullProductExtension: "tif"
 fullProductProtocol: "protocol://"
 fullProductSignedUrl: false
-imageTypes:
-    - "TYPE1"
-    - "TYPE2"
-    - "TYPE3"
+imageGroups:
+  - groupName: "Group 1"
+    types:
+      - name: "TYPE1"
+        displayName: "Type 1"
+        path: "my-prefix/TYPE1"
+      - name: "TYPE2"
+        displayName: "Type 2"
+        path: "my-prefix/TYPE2"
+  - groupName: "Group 2"
+    types:
+      - name: "TYPE3"
+        displayName: "Type 3"
+        path: "my-prefix/TYPE3"
 
 logLevel: "info"
 colorLogs: false
 jsonLogFormat: false
 jsonLogFields:
-    class_name: "prod"
-    server: 42
+  class_name: "prod"
+  server: 42
 httpTrace: false
 exitOnS3Error: false
 cacheDir: ""        # Nothing = default
 retentionPeriod: 10m
+maxImagesDisplayCount: 10
 pollingMode: false
 pollingPeriod: 30s
 webServerPort: 9999

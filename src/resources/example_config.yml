@@ -1,5 +1,5 @@
 s3:
-  endPoint: "192.168.0.27:9000"
+  endPoint: "127.0.0.1:9000"
   bucketName: "my-bucket"
   accessId: "admin"
   accessSecret: "password"
