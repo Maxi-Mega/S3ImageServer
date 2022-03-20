@@ -90,7 +90,6 @@
             imgName = imgName.substring(imgName.indexOf("\n") + 1);
         }*/
         const rawType = parentDiv.getAttribute("img-type");
-        console.info("ImageTypes:", imageTypes); // TODO: check what it prints
         document.getElementById("modal-img-type").innerText = "Type: " + imageTypes.find(imgType => imgType.name === rawType).displayName;
         document.getElementById("modal-img-name").innerText = "Name: " + imgName;
         modal.style.display = "flex";
@@ -159,7 +158,7 @@
             }
             response.json().then(jsonResponse => {
                 const newImages = jsonResponse.data;
-                console.info("Response:", jsonResponse);
+                // console.info("Response:", jsonResponse);
                 const sortedImages = [];
                 for (const img in newImages) {
                     sortedImages.push([img, new Date(newImages[img])]);
@@ -226,16 +225,31 @@
             ev.stopPropagation();
         });
 
-        document.querySelectorAll(".filters input[type=checkbox]").forEach(inpt => {
+        document.querySelectorAll(".filters .img-group-dropdown-content input[type=checkbox]").forEach(inpt => {
             inpt.checked = true;
             // const value = inpt.parentElement.innerText.trim();
             const value = inpt.name;
             inputs[value] = inpt;
             inpt.addEventListener("input", () => {
+                const imgGroup = inpt.getAttribute("img-group");
+                const checkAllParent = document.querySelector(`.filters .img-group-dropdown input[name='${imgGroup}'].check-all`);
+                const others = Array.from(document.querySelectorAll(".filters .img-group-dropdown-content input[type=checkbox]")).filter(e => e.getAttribute("img-group") === imgGroup);
                 if (inpt.checked) {
                     document.querySelectorAll(`div[img-type="${value}"]`).forEach(container => container.classList.remove("filter-hidden"));
+                    if (others.every(input => input.checked)) {
+                        checkAllParent.indeterminate = false;
+                        checkAllParent.checked = true;
+                    } else {
+                        checkAllParent.indeterminate = true;
+                    }
                 } else {
                     document.querySelectorAll(`div[img-type="${value}"]`).forEach(container => container.classList.add("filter-hidden"));
+                    if (others.every(input => !input.checked)) {
+                        checkAllParent.indeterminate = false;
+                        checkAllParent.checked = false;
+                    } else {
+                        checkAllParent.indeterminate = true;
+                    }
                 }
                 countImages();
             });
@@ -248,7 +262,7 @@
                 document.querySelectorAll("div.search-hidden").forEach(container => container.classList.remove("search-hidden"));
             } else {
                 document.querySelectorAll("div > a.img-title").forEach(a => {
-                    if (a.href.toLowerCase().substring((location.href.length - 1) + "{{.BasePath}}/image/".length).includes(value)) {
+                    if (a.href.toLowerCase().substring((location.href.length - 1) + "{{.BasePath}}/image/".length).includes(value) || a.innerHTML.toLowerCase().includes(value)) {
                         a.parentElement.classList.remove("search-hidden");
                     } else {
                         a.parentElement.classList.add("search-hidden");
@@ -270,7 +284,7 @@
             conn.onmessage = function (evt) {
                 const msg = evt.data;
                 const event = JSON.parse(msg);
-                console.info("Data update:", event);
+                // console.info("Data update:", event);
                 const imgKey = event["event_obj"] != null ? event["event_obj"]["img_key"] : null;
                 const alreadyLoaded = images.reduce((found, img) => img["img_key"] === imgKey ? true : found, false); // look for imgKey in images
                 switch (event["event_type"]) {

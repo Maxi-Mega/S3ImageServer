@@ -35,13 +35,17 @@
             }
 
             .filters .img-group-dropdown {
-                margin-left: 20px;
+                margin-left: 30px;
                 color: #e4d3c1;
                 font-size: 14px;
                 -webkit-user-select: none; /* Chrome all / Safari all */
                 -moz-user-select: none; /* Firefox all */
                 -ms-user-select: none; /* IE 10+ */
                 user-select: none;
+            }
+
+            .filters .img-group-dropdown:first-of-type {
+                margin-left: 10px;
             }
 
             .filters .dropdown-title {
@@ -58,6 +62,7 @@
                 position: absolute;
                 background-color: #393939;
                 padding-top: 5px;
+                padding-left: 2px;
                 transform: translateX(-2px);
             }
 
@@ -291,12 +296,14 @@
     <header>
         <div class="filters">
             {{range .ImageGroups}}
+                {{$groupName := .GroupName}}
                 <div class="img-group-dropdown">
+                    <input class="check-all" type="checkbox" name="{{$groupName}}">
                     <span class="dropdown-title">{{.GroupName}}</span>
                     <div class="img-group-dropdown-content">
                         {{range .Types}}
                             <label>
-                                <input type="checkbox" name="{{.Name}}">
+                                <input type="checkbox" name="{{.Name}}" img-group="{{$groupName}}">
                                 {{.DisplayName}}
                             </label>
                         {{end}}
@@ -399,10 +406,30 @@
         document.addEventListener("DOMContentLoaded", () => {
 
             document.querySelectorAll(".filters .img-group-dropdown").forEach(dropdown => {
-                const span = dropdown.querySelector("span");
+                const span = dropdown.querySelector("span.dropdown-title");
                 span.addEventListener("click", () => {
                     document.querySelectorAll(".filters .img-group-dropdown.selected").forEach(other => other !== dropdown ? other.classList.remove("selected") : null);
                     dropdown.classList.toggle("selected");
+                });
+                const input = dropdown.querySelector("input.check-all");
+                input.checked = true;
+                input.addEventListener("input", () => {
+                    const checked = input.checked;
+                    input.indeterminate = false;
+                    dropdown.querySelectorAll(".img-group-dropdown-content input[type=checkbox]").forEach(inpt => {
+                        inpt.checked = checked;
+                    });
+                    const groupName = input.getAttribute("name");
+                    const children = Array.from(document.querySelectorAll(".filters .img-group-dropdown-content input[type=checkbox]")).filter(e => e.getAttribute("img-group") === groupName);
+                    children.forEach(child => {
+                        document.querySelectorAll(`div[img-type="${child.getAttribute("name")}"]`).forEach(container => {
+                            if (checked) {
+                                container.classList.remove("filter-hidden");
+                            } else {
+                                container.classList.add("filter-hidden");
+                            }
+                        });
+                    });
                 });
             });
 
