@@ -67,6 +67,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	executeTemplate(w, tmpl, templateData{
 		Version:                version,
+		BasePath:               config.BasePath,
 		WindowTitle:            config.WindowTitle,
 		ScaleInitialPercentage: config.ScaleInitialPercentage,
 		BucketName:             config.S3.BucketName,
