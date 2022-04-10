@@ -15,6 +15,7 @@
     const container = document.querySelector("div.container");
     const modal = document.getElementById("modal");
     const modalImg = document.getElementById("modal-img");
+    const modalFeatures = document.getElementById("modal-features");
     const modalLinks = document.getElementById("modal-links");
 
     let displayNewImages = true;
@@ -43,27 +44,43 @@
             response.json().then(jsonData => {
                 jsonData = jsonData.data;
                 document.getElementById("modal-img-date").innerText = "Generation date: " + jsonData["date"];
+                while (modalFeatures.hasChildNodes()) {
+                    modalFeatures.removeChild(modalFeatures.firstChild);
+                }
+                const features = jsonData["features"];
+                if (Object.keys(features).length > 0) {
+                    document.getElementById("modal-features-title").style.display = "block";
+                    document.getElementById("modal-features").style.display = "block";
+                    for (const feature in features) {
+                        const li = document.createElement("li");
+                        li.innerText = `${feature}: ${features[feature]}`;
+                        modalFeatures.appendChild(li);
+                    }
+                } else {
+                    document.getElementById("modal-features-title").style.display = "none";
+                    document.getElementById("modal-features").style.display = "none";
+                }
                 while (modalLinks.hasChildNodes()) {
                     modalLinks.removeChild(modalLinks.firstChild);
                 }
-                for (const link of jsonData["links"]) {
-                    const li = document.createElement("li");
-                    const a = document.createElement("a");
-                    a.target = "_blank";
-                    a.href = link;
-                    let formattedLink = link.substring(Math.max(link.lastIndexOf("/") + 1, link.lastIndexOf("%2F") + 3));
-                    if (formattedLink.indexOf("?") !== -1) {
-                        formattedLink = formattedLink.substring(0, formattedLink.indexOf("?"));
-                    }
-                    if (formattedLink.indexOf(fullProductExtension) !== -1) {
-                        formattedLink = formattedLink.substring(0, formattedLink.indexOf(fullProductExtension) + fullProductExtension.length);
-                    }
-                    a.innerText = formattedLink;
-                    li.appendChild(a);
-                    modalLinks.appendChild(li);
-                }
                 if (jsonData["links"].length > 0) {
                     document.getElementById("modal-links-title").style.display = "block";
+                    for (const link of jsonData["links"]) {
+                        const li = document.createElement("li");
+                        const a = document.createElement("a");
+                        a.target = "_blank";
+                        a.href = link;
+                        let formattedLink = link.substring(Math.max(link.lastIndexOf("/") + 1, link.lastIndexOf("%2F") + 3));
+                        if (formattedLink.indexOf("?") !== -1) {
+                            formattedLink = formattedLink.substring(0, formattedLink.indexOf("?"));
+                        }
+                        if (formattedLink.indexOf(fullProductExtension) !== -1) {
+                            formattedLink = formattedLink.substring(0, formattedLink.indexOf(fullProductExtension) + fullProductExtension.length);
+                        }
+                        a.innerText = formattedLink;
+                        li.appendChild(a);
+                        modalLinks.appendChild(li);
+                    }
                 } else {
                     document.getElementById("modal-links-title").style.display = "none";
                 }
@@ -84,7 +101,7 @@
         modalImg.classList.add("show");
         modalImg.src = img.src;
         modalImg.alt = img.alt;
-        const parentDiv = img.parentElement;
+        const parentDiv = img.parentElement.parentElement;
         let imgName = formatTitle(parentDiv.getAttribute("img-name"));
         /*if (imageTypes.map(imgType => imgType.name).includes(imgName.substring(0, imgName.indexOf("\n")))) {
             imgName = imgName.substring(imgName.indexOf("\n") + 1);
@@ -286,7 +303,9 @@
                 const event = JSON.parse(msg);
                 // console.info("Data update:", event);
                 const imgKey = event["event_obj"] != null ? event["event_obj"]["img_key"] : null;
+                const imgSrc = imgKey.replaceAll('/', '@');
                 const alreadyLoaded = images.reduce((found, img) => img["img_key"] === imgKey ? true : found, false); // look for imgKey in images
+                const parentDiv = container.querySelector(`div[img-name="${imgSrc}"]`);
                 switch (event["event_type"]) {
                     case "ADD":
                     case "UPDATE":
@@ -320,14 +339,23 @@
                         break;
                     case "GEONAMES":
                         if (!displayNewImages) {
-                            imagesGeonamesToDisplay[imgKey.replaceAll('/', '@')] = event["event_obj"]["geonames"];
+                            imagesGeonamesToDisplay[imgSrc] = event["event_obj"]["geonames"];
                             break;
                         }
-                        const imgElement = container.querySelector(`img[src*="{{.BasePath}}/image/${imgKey.replaceAll('/', '@')}"]`);
-                        if (imgElement != null) {
-                            const title = imgElement.parentElement.querySelector("a.img-title");
+                        {{/*const imgElement = container.querySelector(`img[src*="{{.BasePath}}/image/${imgSrc}"]`);*/}}
+                        if (parentDiv != null) {
+                            const title = parentDiv.querySelector("a.img-title");
                             if (title != null) {
                                 title.innerText = event["event_obj"]["geonames"];
+                            }
+                        }
+                        break;
+                    case "FEATURES":
+                        if (parentDiv != null) {
+                            const pre = parentDiv.querySelector("pre.image-features");
+                            const features = event["event_obj"]["features"];
+                            for (const feature in features) {
+                                pre.innerHTML += `${feature}: ${features[feature]}&nbsp;\n`
                             }
                         }
                         break;

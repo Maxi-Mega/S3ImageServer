@@ -11,19 +11,26 @@ const (
 	eventRemove = "REMOVE"
 
 	eventGeonames = "GEONAMES"
+	eventFeatures = "FEATURES"
 
 	eventReset = "RESET"
 )
 
 type EventObject struct {
-	ImgType string `json:"img_type"`
-	ImgKey  string `json:"img_key"`
-	ImgName string `json:"img_name"`
+	ImgType  string   `json:"img_type"`
+	ImgKey   string   `json:"img_key"`
+	ImgName  string   `json:"img_name"`
+	Features Features `json:"features"`
 }
 
 type EventGeonames struct {
 	ImgKey   string `json:"img_key"`
 	Geonames string `json:"geonames"`
+}
+
+type EventFeatures struct {
+	ImgKey   string   `json:"img_key"`
+	Features Features `json:"features"`
 }
 
 type event struct {
@@ -51,6 +58,8 @@ func (evt event) String() string {
 		return evt.EventType + ":" + evt.EventObj.(EventObject).ImgKey
 	case eventGeonames:
 		return evt.EventType + ":" + evt.EventObj.(EventGeonames).ImgKey
+	case eventFeatures:
+		return evt.EventType + ":" + evt.EventObj.(EventFeatures).ImgKey
 	default:
 		printWarn("[event String()] Unknown event type: ", evt.EventType)
 		return "Unknown event type:" + evt.EventType

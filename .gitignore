@@ -2,6 +2,7 @@
 build_compress_move.sh
 local_config.yml
 geonames*.json
+*.features.json
 
 ### JetBrains template
 # Covers JetBrains IDEs: IntelliJ, RubyMine, PhpStorm, AppCode, PyCharm, CLion, Android Studio, WebStorm and Rider

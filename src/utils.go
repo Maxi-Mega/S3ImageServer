@@ -30,6 +30,7 @@ func getImageId(name string, date time.Time) string {
 	return imgName
 }*/
 
+// formatFileName replaces all the '/' by a '@'
 func formatFileName(imgPath string) string {
 	return strings.ReplaceAll(imgPath, "/", "@")
 }
@@ -125,6 +126,7 @@ type ImageInfos struct {
 	Date     string   `json:"date"`
 	Links    []string `json:"links"`
 	Geonames string   `json:"geonames"`
+	Features Features `json:"features"`
 }
 
 func prettier(w http.ResponseWriter, message string, data interface{}, status int) {
@@ -188,4 +190,11 @@ func clearDir(dir string) error {
 		}
 	}
 	return nil
+}
+
+func minInt(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }

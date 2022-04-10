@@ -129,10 +129,15 @@ func infosHandler(w http.ResponseWriter, r *http.Request) {
 	if !found {
 		geonames = Geonames{}
 	}
+	features, found := featuresCache[imgDir+config.FeaturesExtension]
+	if !found {
+		features = Features{}
+	}
 	prettier(w, "Image infos", ImageInfos{
 		Date:     strDate,
 		Links:    links,
 		Geonames: geonames.format(),
+		Features: features,
 	}, http.StatusOK)
 }
 

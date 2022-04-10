@@ -140,6 +140,17 @@
                 /*transition: all ease-in-out 1s;*/
             }
 
+            .image-features {
+                position: absolute;
+                bottom: 4px;
+                left: 0;
+                background-color: #1c1c1c;
+                line-height: 1.7;
+                margin: 0;
+                color: white;
+                text-align: left;
+            }
+
             .filter-hidden, .search-hidden {
                 display: none;
             }
@@ -260,11 +271,11 @@
                 width: 50%;
             }
 
-            #modal-links-title {
+            #modal-features-title, #modal-links-title {
                 margin-top: 10px !important;
             }
 
-            #modal-links {
+            #modal-features, #modal-links {
                 width: 100%;
                 max-height: 250px;
                 margin: 0;
@@ -331,7 +342,14 @@
         {{- $basePath := .BasePath -}}
         {{range .Previews}}
             <div class="img-container" img-type="{{.ImgType}}" img-name="{{.ImgKey}}">
-                <img src="{{$basePath}}/image/{{.ImgKey}}" alt="{{.ImgKey}}" title="{{.ImgKey}}"/>
+                <div style="position: relative">
+                    <img src="{{$basePath}}/image/{{.ImgKey}}" alt="{{.ImgKey}}" title="{{.ImgKey}}"/>
+                    <pre class="image-features">
+{{- range $feature, $count := .Features}}
+{{$feature}}: {{$count}}&nbsp;
+{{- end -}}
+                    </pre>
+                </div>
                 <br/>
                 <a class="img-title" href="{{$basePath}}/image/{{.ImgKey}}" target="_blank"
                    title="Click to open the image in a new tab">{{.ImgName}}</a>
@@ -352,11 +370,13 @@
                 <h3 id="modal-img-type"></h3>
                 <h3 id="modal-img-name"></h3>
                 <h3 id="modal-img-date"></h3>
+                <h2 id="modal-features-title">Features</h2>
+                <ul id="modal-features"></ul>
                 <h2 id="modal-links-title">Contents</h2>
                 <ul id="modal-links" title="Click to open with external application">
-                    <li>
+                    {{/*<li>
                         <a href=""></a>
-                    </li>
+                    </li>*/}}
                 </ul>
             </div>
         </div>

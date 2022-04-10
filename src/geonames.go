@@ -61,25 +61,7 @@ func (geonames Geonames) format() string {
 	return final
 }
 
-func parseGeonames(filePath string) (Geonames, error) {
-	fileContent, err := os.ReadFile(filePath)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return Geonames{}, fmt.Errorf("file %q not found", filePath)
-		}
-		return Geonames{}, err
-	}
-
-	var geonames Geonames
-	err = json.Unmarshal(fileContent, &geonames)
-	if err != nil {
-		return Geonames{}, fmt.Errorf("failed to unmarshal from json the content of the file %q: %v", filePath, err)
-	}
-
-	return geonames, nil
-}
-
-func getGeonamesTopLevel(geonames Geonames) string {
+func (geonames Geonames) getTopLevel() string {
 	if len(geonames) > 0 {
 		name := geonames[0].Name
 		states := geonames[0].States
@@ -99,12 +81,30 @@ func getGeonamesTopLevel(geonames Geonames) string {
 	return "no geoname found"
 }
 
+func parseGeonames(filePath string) (Geonames, error) {
+	fileContent, err := os.ReadFile(filePath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return Geonames{}, fmt.Errorf("file %q not found", filePath)
+		}
+		return Geonames{}, err
+	}
+
+	var geonames Geonames
+	err = json.Unmarshal(fileContent, &geonames)
+	if err != nil {
+		return Geonames{}, fmt.Errorf("failed to unmarshal from json the content of the geonames file %q: %v", filePath, err)
+	}
+
+	return geonames, nil
+}
+
 func getGeoname(imgName string) string {
 	// geonamesFilename := strings.TrimSuffix(imgName, config.PreviewFilename) + config.GeonamesFilename
 	geonamesFilename := imgName[:strings.LastIndex(imgName, "@")+1] + config.GeonamesFilename
 	geoname, found := geonamesCache[geonamesFilename]
 	if found && len(geoname) > 0 {
-		return getGeonamesTopLevel(geoname)
+		return geoname.getTopLevel()
 	}
 	return imgName
 }

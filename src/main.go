@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-const version = "2.3.2"
+const version = "2.4.0"
 
 const defaultTempDirName = "s3_image_server"
 
@@ -24,6 +24,8 @@ var timers map[string]*time.Timer
 var timersMutex sync.Mutex
 var geonamesCache map[string]Geonames
 var geonamesCacheMutex sync.Mutex
+var featuresCache map[string]Features
+var featuresCacheMutex sync.Mutex
 var fullProductLinksCache map[string][]string
 var fullProductLinksCacheMutex sync.Mutex
 
@@ -103,6 +105,7 @@ func main() {
 	eventChan := make(chan event, 1)
 	timers = map[string]*time.Timer{}
 	geonamesCache = map[string]Geonames{}
+	featuresCache = map[string]Features{}
 
 	go func() {
 		if config.PollingMode {

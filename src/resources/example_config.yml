@@ -10,6 +10,7 @@ windowTitle: "S3 Image Viewer"
 scaleInitialPercentage: 50
 previewFilename: "preview.jpg"
 geonamesFilename: "geonames.json"
+featuresExtension: ".features.json"
 fullProductExtension: "tif"
 fullProductProtocol: "protocol://"
 fullProductSignedUrl: false

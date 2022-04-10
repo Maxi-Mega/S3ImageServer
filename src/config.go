@@ -45,6 +45,7 @@ type Config struct {
 	ScaleInitialPercentage uint8        `yaml:"scaleInitialPercentage"`
 	PreviewFilename        string       `yaml:"previewFilename"`
 	GeonamesFilename       string       `yaml:"geonamesFilename"`
+	FeaturesExtension      string       `yaml:"featuresExtension"`
 	FullProductExtension   string       `yaml:"fullProductExtension"`
 	FullProductProtocol    string       `yaml:"fullProductProtocol"`
 	FullProductRootUrl     string       `yaml:"fullProductRootUrl"`

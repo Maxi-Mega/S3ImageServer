@@ -71,6 +71,10 @@ func getGeonamesFileFromBucket(minioClient *minio.Client, objKey, formattedFilen
 	if err != nil {
 		return err
 	}
+	img, found := imagesCache.findImageByPrefix(targetImg)
+	if found {
+		img.AssociatedGeonames = &geonames
+	}
 	geonamesCacheMutex.Lock()
 	geonamesCache[formattedFilename] = geonames
 	geonamesCacheMutex.Unlock()
@@ -89,7 +93,50 @@ func getGeonamesFileFromBucket(minioClient *minio.Client, objKey, formattedFilen
 		EventType: eventGeonames,
 		EventObj: EventGeonames{
 			ImgKey:   targetImg,
-			Geonames: getGeonamesTopLevel(geonames),
+			Geonames: geonames.getTopLevel(),
+		},
+		EventDate: time.Now().String(),
+		source:    "getGeonamesFileFromBucket",
+	}
+	return nil
+}
+
+func getFeaturesFileFromBucket(minioClient *minio.Client, objKey string, formattedFilename string, targetImg string, eventChan chan event) error {
+	filePath := path.Join(config.CacheDir, formattedFilename)
+	err := getFileFromBucket(minioClient, objKey, filePath)
+	if err != nil {
+		return err
+	}
+	if timer, found := timers[formattedFilename]; found {
+		timer.Stop()
+	}
+	features, err := parseFeatures(filePath)
+	if err != nil {
+		return err
+	}
+	img, found := imagesCache.findImageByPrefix(targetImg)
+	if found {
+		img.AssociatedFeatures = &features
+	}
+	featuresCacheMutex.Lock()
+	featuresCache[formattedFilename] = features
+	featuresCacheMutex.Unlock()
+	timersMutex.Lock()
+	timers[formattedFilename] = time.AfterFunc(config.RetentionPeriod, func() {
+		featuresCacheMutex.Lock()
+		delete(featuresCache, formattedFilename)
+		featuresCacheMutex.Unlock()
+		deleteFileFromCache(formattedFilename)
+		timersMutex.Lock()
+		delete(timers, formattedFilename)
+		timersMutex.Unlock()
+	})
+	timersMutex.Unlock()
+	eventChan <- event{
+		EventType: eventFeatures,
+		EventObj: EventFeatures{
+			ImgKey:   targetImg,
+			Features: features,
 		},
 		EventDate: time.Now().String(),
 		source:    "getGeonamesFileFromBucket",
@@ -125,7 +172,7 @@ func listMetaFiles(minioClient *minio.Client, dirs map[string]string, eventChan 
 	tempFullProductLinksCache := map[string][]string{}
 	for dir, targetImg := range dirs {
 		// logger.Info().Msg("Dir: " + dir)
-		func() {
+		func() { // usage of an anonymous function to call defer funcs at the end of each loop
 			tempFullProductLinksCache[dir] = []string{}
 			ctx, cancel := context.WithTimeout(context.Background(), config.PollingPeriod)
 			defer cancel()
@@ -135,6 +182,7 @@ func listMetaFiles(minioClient *minio.Client, dirs map[string]string, eventChan 
 					continue
 				}
 
+				// geonames
 				if len(config.GeonamesFilename) > 0 && strings.HasSuffix(obj.Key, config.GeonamesFilename) {
 					formattedFilename := formatFileName(dir + "/" + config.GeonamesFilename)
 					if _, alreadyInCache := geonamesCache[formattedFilename]; alreadyInCache {
@@ -149,6 +197,21 @@ func listMetaFiles(minioClient *minio.Client, dirs map[string]string, eventChan 
 					continue
 				}
 
+				// features
+				if len(config.FeaturesExtension) > 0 && strings.HasSuffix(obj.Key, config.FeaturesExtension) {
+					formattedFilename := formatFileName(dir + "/" + config.FeaturesExtension)
+					if _, alreadyInCache := featuresCache[formattedFilename]; alreadyInCache {
+						continue
+					}
+					printDebug("Found features file: ", obj.Key)
+					err := getFeaturesFileFromBucket(minioClient, obj.Key, formattedFilename, targetImg, eventChan)
+					if err != nil {
+						printError(err, false)
+					}
+					continue
+				}
+
+				// full product images
 				if len(config.FullProductExtension) > 0 && strings.HasSuffix(obj.Key, config.FullProductExtension) {
 					tempFullProductLinksCache[dir] = append(tempFullProductLinksCache[dir], getFullProductImageLink(minioClient, obj.Key))
 					continue

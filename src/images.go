@@ -17,6 +17,7 @@ type S3Image struct {
 
 	Type               *ImageType
 	AssociatedGeonames *Geonames
+	AssociatedFeatures *Features
 }
 
 func newS3ImageFromCache(imagePath string, fileInfo fs.FileInfo) S3Image {
@@ -56,7 +57,16 @@ func (images S3Images) findImageByKey(key string) (image *S3Image, found bool) {
 			return &images[i], true
 		}
 	}
-	return &S3Image{}, false
+	return nil, false
+}
+
+func (images S3Images) findImageByPrefix(prefix string) (image *S3Image, found bool) {
+	for i, img := range images {
+		if strings.HasPrefix(img.S3Key, prefix) {
+			return &images[i], true
+		}
+	}
+	return nil, false
 }
 
 func (images S3Images) toEventObjects() []EventObject {
@@ -67,19 +77,36 @@ func (images S3Images) toEventObjects() []EventObject {
 		return images[i].LastModified.After(images[j].LastModified) // Usage of after to invert the sort order
 	})
 
-	result := make([]EventObject, len(images))
+	maxImagesCount := len(images)
+	if config.MaxImagesDisplayCount > 0 {
+		maxImagesCount = config.MaxImagesDisplayCount
+	}
+
+	result := make([]EventObject, maxImagesCount)
 	for i, image := range images {
+		if i >= maxImagesCount {
+			// convert only the maxImagesCount first images,
+			// maxImagesCount being the minimum between the number of available images and the max images display count
+			break
+		}
+		features := Features{}
+		if image.AssociatedFeatures != nil {
+			/*for feature, count := range *image.AssociatedFeatures {
+				features += fmt.Sprintf("%s: %d ", feature, count)
+			}*/
+			features = *image.AssociatedFeatures
+		}
 		result[i] = EventObject{
-			ImgType: image.Type.Name,
-			ImgKey:  image.FormattedKey,
-			ImgName: getGeoname(image.FormattedKey),
+			ImgType:  image.Type.Name,
+			ImgKey:   image.FormattedKey,
+			ImgName:  getGeoname(image.FormattedKey),
+			Features: features,
 		}
 	}
 
-	if config.MaxImagesDisplayCount > 0 && len(result) > config.MaxImagesDisplayCount {
-		// limit := len(result) - config.MaxImagesDisplayCount - 1
+	/*if config.MaxImagesDisplayCount > 0 && len(result) > config.MaxImagesDisplayCount {
 		return result[:config.MaxImagesDisplayCount] // keep only the n first images, n being the max images display count
-	}
+	}*/
 
 	return result
 }
