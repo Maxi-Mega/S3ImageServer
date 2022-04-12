@@ -1,4 +1,4 @@
-# S3ImageServer [V2.4.0]
+# S3ImageServer [V2.4.1]
 
 ### Browse images from S3 bucket
 
@@ -25,6 +25,7 @@ windowTitle: "S3 Image Viewer"
 scaleInitialPercentage: 50
 previewFilename: "preview.jpg"
 geonamesFilename: "geonames.json"
+featuresExtension: ".features.json"
 fullProductExtension: "tif"
 fullProductProtocol: "protocol://"
 fullProductSignedUrl: false

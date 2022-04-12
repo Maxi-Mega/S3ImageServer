@@ -123,6 +123,8 @@
         }
         newImg.style.maxWidth = currentImgWidth;
         newImg.addEventListener("click", () => modalize(newImg));
+        const newPre = document.createElement("pre");
+        newPre.classList.add("image-features");
         const newA = document.createElement("a");
         newA.classList.add("img-title");
         newA.href = "{{.BasePath}}/image/" + imgKey;
@@ -130,26 +132,30 @@
         newA.title = "Click to open the image in a new tab";
         newA.style.fontSize = currentFontSize;
         newA.innerText = formatTitle(img["img_name"]);
-        const newDiv = document.createElement("div");
-        newDiv.classList.add("img-container");
-        newDiv.appendChild(newImg);
-        newDiv.appendChild(newA);
+        const featuresContainer = document.createElement("div");
+        featuresContainer.classList.add("features-container");
+        featuresContainer.appendChild(newImg);
+        featuresContainer.appendChild(newPre);
+        const imgContainer = document.createElement("div");
+        imgContainer.classList.add("img-container");
+        imgContainer.appendChild(featuresContainer);
+        imgContainer.appendChild(newA);
         const imgType = img["img_type"]; // img.substring(prefixName.length === 0 ? 0 : prefixName.length + 1).split("@")[0];
-        newDiv.setAttribute("img-type", imgType);
-        newDiv.setAttribute("img-name", imgKey); // imgTitle.substring(imgTitle.indexOf("\n") + 1)
+        imgContainer.setAttribute("img-type", imgType);
+        imgContainer.setAttribute("img-name", imgKey); // imgTitle.substring(imgTitle.indexOf("\n") + 1)
         if (inputs.hasOwnProperty(imgType)) {
             if (!inputs[imgType].checked) {
-                newDiv.classList.add("filter-hidden");
+                imgContainer.classList.add("filter-hidden");
             }
         }
         const searchValue = searchInput.value.toLowerCase();
         if (searchValue !== "") {
             if (!newA.innerText.toLowerCase().includes(searchValue) && !newA.href.toLowerCase().substring("/image/".length).includes(searchValue)) {
-                newDiv.classList.add("search-hidden");
+                imgContainer.classList.add("search-hidden");
             }
         }
 
-        container.insertBefore(newDiv, container.firstChild);
+        container.insertBefore(imgContainer, container.firstChild);
         if (container.childElementCount > maxImagesDisplayCount) {
             container.removeChild(container.lastElementChild);
         }
@@ -198,6 +204,21 @@
         document.getElementById("modal-links-title").style.display = "none";
         document.getElementById("geonames-title").style.display = "none";
         document.getElementById("geonames").style.display = "none";
+    }
+
+    function fetchFeatures(parentDiv) {
+        const img = parentDiv.querySelector("div.features-container img");
+        fetch("{{.BasePath}}/infos/" + img.alt).then(response => {
+            response.json().then(jsonData => {
+                const features = jsonData.data["features"];
+                if (features && Object.keys(features).length > 0) {
+                    const pre = parentDiv.querySelector("pre.image-features");
+                    for (const feature in features) {
+                        pre.innerHTML += `&nbsp;${feature}: ${features[feature]}&nbsp;\n`
+                    }
+                }
+            });
+        });
     }
 
     document.addEventListener("DOMContentLoaded", () => {
@@ -301,7 +322,7 @@
             conn.onmessage = function (evt) {
                 const msg = evt.data;
                 const event = JSON.parse(msg);
-                // console.info("Data update:", event);
+                console.info("Data update:", event);
                 const imgKey = event["event_obj"] != null ? event["event_obj"]["img_key"] : null;
                 const imgSrc = imgKey.replaceAll('/', '@');
                 const alreadyLoaded = images.reduce((found, img) => img["img_key"] === imgKey ? true : found, false); // look for imgKey in images
@@ -314,7 +335,7 @@
                         }
                         if (alreadyLoaded) {
                             let imgToRemove = document.querySelector(`img[src*="{{.BasePath}}/image/${imgKey}"]`);
-                            container.removeChild(imgToRemove.parentElement);
+                            container.removeChild(imgToRemove.parentElement.parentElement);
                             for (let i in images) {
                                 if (images[i].img_key === imgKey) {
                                     images.splice(i, 1);
@@ -323,10 +344,14 @@
                             }
                         }
                         addNewImg(event["event_obj"], event["event_date"]);
+                        if (event["event_type"] === "UPDATE" && parentDiv != null) {
+                            // Do not pass parentDiv because the element has been removed
+                            fetchFeatures(container.querySelector(`div[img-name="${imgSrc}"]`));
+                        }
                         break;
                     case "REMOVE":
                         if (alreadyLoaded) {
-                            container.removeChild(document.querySelector(`img[src*="{{.BasePath}}/image/${imgKey}"]`).parentElement);
+                            container.removeChild(document.querySelector(`img[src*="{{.BasePath}}/image/${imgKey}"]`).parentElement.parentElement);
                             // delete images[imgKey];
                             for (let i in images) {
                                 if (images[i].img_key === imgKey) {
@@ -342,7 +367,7 @@
                             imagesGeonamesToDisplay[imgSrc] = event["event_obj"]["geonames"];
                             break;
                         }
-                        {{/*const imgElement = container.querySelector(`img[src*="{{.BasePath}}/image/${imgSrc}"]`);*/}}
+                    {{/*const imgElement = container.querySelector(`img[src*="{{.BasePath}}/image/${imgSrc}"]`);*/}}
                         if (parentDiv != null) {
                             const title = parentDiv.querySelector("a.img-title");
                             if (title != null) {
@@ -355,7 +380,7 @@
                             const pre = parentDiv.querySelector("pre.image-features");
                             const features = event["event_obj"]["features"];
                             for (const feature in features) {
-                                pre.innerHTML += `${feature}: ${features[feature]}&nbsp;\n`
+                                pre.innerHTML += `&nbsp;${feature}: ${features[feature]}&nbsp;\n`
                             }
                         }
                         break;

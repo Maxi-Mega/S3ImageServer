@@ -140,10 +140,15 @@
                 /*transition: all ease-in-out 1s;*/
             }
 
+            .features-container {
+                position: relative;
+            }
+
             .image-features {
                 position: absolute;
-                bottom: 4px;
-                left: 0;
+                top: 4px;
+                left: 50%;
+                transform: translateX(-50%);
                 background-color: #1c1c1c;
                 line-height: 1.7;
                 margin: 0;
@@ -342,11 +347,11 @@
         {{- $basePath := .BasePath -}}
         {{range .Previews}}
             <div class="img-container" img-type="{{.ImgType}}" img-name="{{.ImgKey}}">
-                <div style="position: relative">
+                <div class="features-container">
                     <img src="{{$basePath}}/image/{{.ImgKey}}" alt="{{.ImgKey}}" title="{{.ImgKey}}"/>
                     <pre class="image-features">
 {{- range $feature, $count := .Features}}
-{{$feature}}: {{$count}}&nbsp;
+&nbsp;{{$feature}}: {{$count}}&nbsp;
 {{- end -}}
                     </pre>
                 </div>
@@ -387,7 +392,7 @@
         function countImages() {
             const visible = document.querySelectorAll("div.img-container:not(.filter-hidden):not(.search-hidden)").length;
             const total = document.querySelectorAll("div.img-container").length;
-            document.getElementById("img-count").innerText = "(" + visible + " / " + total + ")";
+            document.getElementById("img-count").innerText = `(${visible} / ${total})`;
         }
 
         function updateScale() {
@@ -405,7 +410,7 @@
                 return;
             }
             const currentImageSrc = modalImg.src;
-            const allImages = Array.from(document.querySelectorAll("div.img-container:not(.filter-hidden):not(.search-hidden)")).map(div => div.firstElementChild);
+            const allImages = Array.from(document.querySelectorAll("div.img-container:not(.filter-hidden):not(.search-hidden)")).map(div => div.querySelector("img"));
 
             for (let i = 0; i < allImages.length; i++) {
                 if (allImages[i].src === currentImageSrc) {

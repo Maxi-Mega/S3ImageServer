@@ -229,6 +229,7 @@ func startWSServer(port uint16, eventChan chan event) error {
 	http.HandleFunc("/image/", imageHandler)
 	http.HandleFunc("/images", imagesListHandler)
 	http.HandleFunc("/infos/", infosHandler)
+	http.HandleFunc("/cache/", cacheHandler)
 	http.HandleFunc("/reload", func(w http.ResponseWriter, r *http.Request) {
 		reloadHandler(w, r, eventChan)
 	})

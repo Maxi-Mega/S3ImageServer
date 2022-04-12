@@ -183,9 +183,10 @@ func listMetaFiles(minioClient *minio.Client, dirs map[string]string, eventChan 
 				}
 
 				// geonames
-				if len(config.GeonamesFilename) > 0 && strings.HasSuffix(obj.Key, config.GeonamesFilename) {
+				if len(config.GeonamesFilename) > 0 && strings.HasSuffix(obj.Key, "/"+config.GeonamesFilename) {
 					formattedFilename := formatFileName(dir + "/" + config.GeonamesFilename)
 					if _, alreadyInCache := geonamesCache[formattedFilename]; alreadyInCache {
+						tempFullProductLinksCache[dir] = append(tempFullProductLinksCache[dir], getCacheFileLink(strings.ReplaceAll(dir, "/", "@"), config.GeonamesFilename))
 						continue
 					}
 					printDebug("Found geonames file: ", obj.Key)
@@ -193,21 +194,28 @@ func listMetaFiles(minioClient *minio.Client, dirs map[string]string, eventChan 
 					err := getGeonamesFileFromBucket(minioClient, obj.Key, formattedFilename, targetImg, eventChan)
 					if err != nil {
 						printError(err, false)
+						continue
 					}
+					tempFullProductLinksCache[dir] = append(tempFullProductLinksCache[dir], getCacheFileLink(strings.ReplaceAll(dir, "/", "@"), config.GeonamesFilename))
 					continue
 				}
 
 				// features
 				if len(config.FeaturesExtension) > 0 && strings.HasSuffix(obj.Key, config.FeaturesExtension) {
-					formattedFilename := formatFileName(dir + "/" + config.FeaturesExtension)
+					parts := strings.Split(obj.Key, "/")
+					filename := parts[len(parts)-1]
+					formattedFilename := formatFileName(dir + "/" + filename)
 					if _, alreadyInCache := featuresCache[formattedFilename]; alreadyInCache {
+						tempFullProductLinksCache[dir] = append(tempFullProductLinksCache[dir], getCacheFileLink(strings.ReplaceAll(dir, "/", "@"), filename))
 						continue
 					}
 					printDebug("Found features file: ", obj.Key)
 					err := getFeaturesFileFromBucket(minioClient, obj.Key, formattedFilename, targetImg, eventChan)
 					if err != nil {
 						printError(err, false)
+						continue
 					}
+					tempFullProductLinksCache[dir] = append(tempFullProductLinksCache[dir], getCacheFileLink(strings.ReplaceAll(dir, "/", "@"), filename))
 					continue
 				}
 
@@ -265,15 +273,14 @@ func extractFilesFromBucket(minioClient *minio.Client, eventChan chan event) err
 			if err != nil {
 				return err
 			}
+			// As getImageFromBucket does not add the image to the imagesCache,
+			// we need to update it if the image was already there or add it manually if it's a new one
 			img, found := imagesCache.findImageByKey(obj.Key)
 			if found {
 				img.LastModified = obj.LastModified
 			} else {
 				imagesCache.addImage(obj.Key, obj.Size, obj.LastModified)
 			}
-			// imagesCacheMutex.Lock()
-			// img.LastModified = obj.LastModified
-			// imagesCacheMutex.Unlock()
 		}
 	}
 

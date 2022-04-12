@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -36,6 +37,7 @@ func startWebServer(port uint16) error {
 	http.HandleFunc("/image/", imageHandler)
 	http.HandleFunc("/images", imagesListHandler)
 	http.HandleFunc("/infos/", infosHandler)
+	http.HandleFunc("/cache/", cacheHandler)
 	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNoContent) // for ping
 	})
@@ -129,16 +131,67 @@ func infosHandler(w http.ResponseWriter, r *http.Request) {
 	if !found {
 		geonames = Geonames{}
 	}
-	features, found := featuresCache[imgDir+config.FeaturesExtension]
-	if !found {
-		features = Features{}
+	features := img.AssociatedFeatures
+	if features == nil {
+		features = &Features{}
 	}
 	prettier(w, "Image infos", ImageInfos{
 		Date:     strDate,
 		Links:    links,
 		Geonames: geonames.format(),
-		Features: features,
+		Features: *features,
 	}, http.StatusOK)
+}
+
+func cacheHandler(w http.ResponseWriter, r *http.Request) {
+	wanted := strings.TrimPrefix(r.URL.Path, "/cache/")
+	wanted = strings.TrimSuffix(wanted, "/")
+	parts := strings.Split(wanted, "/")
+	// URL structure: imgNameWithSlashes/filename
+	if len(parts) != 2 {
+		prettier(w, "Invalid URL", nil, http.StatusBadRequest)
+		return
+	}
+	imgName := parts[0]
+	imgNameWithSlashes := strings.ReplaceAll(imgName, "@", "/")
+	_, found := imagesCache.findImageByKey(imgNameWithSlashes + "/" + config.PreviewFilename)
+	if !found {
+		prettier(w, "Image not found !", nil, http.StatusNotFound)
+		return
+	}
+	filename := parts[1]
+	_, found = fullProductLinksCache[imgNameWithSlashes]
+	if !found {
+		prettier(w, "Image not found !", nil, http.StatusNotFound)
+		return
+	}
+	/*found = false
+	for _, file := range files {
+		if file == filename {
+			found = true
+			break
+		}
+	}
+	if !found {
+		prettier(w, "Image not found !", nil, http.StatusNotFound)
+		return
+	}*/
+	file, err := os.Open(filepath.Join(config.CacheDir, imgName+"@"+filename))
+	if err != nil {
+		prettier(w, "Failed to open file: "+err.Error(), nil, http.StatusInternalServerError)
+		return
+	}
+	defer file.Close()
+	contentType, err := getFileContentType(file)
+	if err != nil {
+		prettier(w, "Failed to detect file content-type: "+err.Error(), nil, http.StatusInternalServerError)
+	} else {
+		w.Header().Set("Content-Type", contentType)
+	}
+	_, err = io.Copy(w, file)
+	if err != nil {
+		prettier(w, "Failed to read file: "+err.Error(), nil, http.StatusInternalServerError)
+	}
 }
 
 func deleteCookies(w http.ResponseWriter, r *http.Request) {

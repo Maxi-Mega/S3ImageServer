@@ -109,6 +109,10 @@ func generateImagesCache() S3Images {
 	return "", false
 }*/
 
+func getCacheFileLink(img, file string) string {
+	return config.BasePath + "/cache/" + img + "/" + file
+}
+
 func getFullProductImageLink(minioClient *minio.Client, objKey string) string {
 	if config.FullProductSignedUrl {
 		signedUrl, err := minioClient.PresignedGetObject(context.Background(), config.S3.BucketName, objKey, 7*24*time.Hour, url.Values{})
@@ -176,6 +180,22 @@ func joinStructs(structs interface{}, sep string, displayFieldsName bool) (joine
 		}
 	}
 	return joined
+}
+
+func getFileContentType(file *os.File) (string, error) {
+	if strings.HasSuffix(file.Name(), ".json") {
+		return "application/json", nil
+	}
+	buffer := make([]byte, 512)
+
+	_, err := file.Read(buffer)
+	if err != nil {
+		return "", fmt.Errorf("failed to read file: %v", err)
+	}
+
+	// Use the net/http package's handy DectectContentType function. Always returns a valid
+	// content-type by returning "application/octet-stream" if no others seemed to match.
+	return http.DetectContentType(buffer), nil
 }
 
 func clearDir(dir string) error {

@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-const version = "2.4.0"
+const version = "2.4.1"
 
 const defaultTempDirName = "s3_image_server"
 
@@ -26,7 +26,7 @@ var geonamesCache map[string]Geonames
 var geonamesCacheMutex sync.Mutex
 var featuresCache map[string]Features
 var featuresCacheMutex sync.Mutex
-var fullProductLinksCache map[string][]string
+var fullProductLinksCache map[string][]string // TODO: rename ?
 var fullProductLinksCacheMutex sync.Mutex
 
 var pollMutex sync.Mutex
