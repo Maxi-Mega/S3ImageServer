@@ -11,6 +11,7 @@ scaleInitialPercentage: 50
 previewFilename: "preview.jpg"
 geonamesFilename: "geonames.json"
 featuresExtension: ".features.json"
+featuresPropertyName: "detection"
 fullProductExtension: "tif"
 fullProductProtocol: "protocol://"
 fullProductSignedUrl: false

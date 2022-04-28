@@ -10,14 +10,11 @@ import (
 type RawFeaturesFile struct { // TODO: remove useless fields
 	Type     string `json:"type"`
 	Features []struct {
-		Type       string `json:"type"`
-		Properties struct {
+		Type string `json:"type"`
+		/*Properties struct {
 			Detection string `json:"detection"`
-		} `json:"properties"`
-		Geometry struct {
-			Type        string        `json:"type"`
-			Coordinates [][][]float64 `json:"coordinates"`
-		} `json:"geometry"`
+		} `json:"properties"`*/
+		Properties map[string]interface{} `json:"properties"`
 	} `json:"features"`
 }
 
@@ -52,7 +49,7 @@ func parseFeatures(filePath string) (Features, error) {
 
 	features := make(Features)
 	for _, rawFeature := range rawFeatures.Features {
-		detection := strings.Title(rawFeature.Properties.Detection)
+		detection := strings.Title(rawFeature.Properties[config.FeaturesPropertyName].(string))
 		if !strings.HasSuffix(detection, "s") {
 			detection += "s"
 		}

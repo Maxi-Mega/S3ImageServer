@@ -46,6 +46,7 @@ type Config struct {
 	PreviewFilename        string       `yaml:"previewFilename"`
 	GeonamesFilename       string       `yaml:"geonamesFilename"`
 	FeaturesExtension      string       `yaml:"featuresExtension"`
+	FeaturesPropertyName   string       `yaml:"featuresPropertyName"`
 	FullProductExtension   string       `yaml:"fullProductExtension"`
 	FullProductProtocol    string       `yaml:"fullProductProtocol"`
 	FullProductRootUrl     string       `yaml:"fullProductRootUrl"`

@@ -1,4 +1,4 @@
-# S3ImageServer [V2.4.1]
+# S3ImageServer [V2.4.3]
 
 ### Browse images from S3 bucket
 
@@ -26,6 +26,7 @@ scaleInitialPercentage: 50
 previewFilename: "preview.jpg"
 geonamesFilename: "geonames.json"
 featuresExtension: ".features.json"
+featuresPropertyName: "detection"
 fullProductExtension: "tif"
 fullProductProtocol: "protocol://"
 fullProductSignedUrl: false
