@@ -78,7 +78,7 @@ func (images S3Images) toEventObjects() []EventObject {
 	})
 
 	maxImagesCount := len(images)
-	if config.MaxImagesDisplayCount > 0 {
+	if maxImagesCount > config.MaxImagesDisplayCount {
 		maxImagesCount = config.MaxImagesDisplayCount
 	}
 

@@ -131,7 +131,7 @@
         newA.target = "_blank";
         newA.title = "Click to open the image in a new tab";
         newA.style.fontSize = currentFontSize;
-        newA.innerText = formatTitle(img["img_name"]);
+        newA.innerHTML = formatTitle(img["img_name"]).replace(/_/g, "_<wbr />");
         const featuresContainer = document.createElement("div");
         featuresContainer.classList.add("features-container");
         featuresContainer.appendChild(newImg);
@@ -229,6 +229,7 @@
                 imgName = imgName.substring(imgName.lastIndexOf("@") + 1);
                 a.innerText = imgName; // formatTitle(a.innerText);
             }
+            a.innerHTML = a.innerHTML.replace(/_/g, "_<wbr />");
             /*a.parentElement.setAttribute("img-type", a.innerText.split("\n")[0]);
             a.parentElement.setAttribute("img-name", imgTitle.substring(imgTitle.indexOf("\n") + 1));*/
         });
