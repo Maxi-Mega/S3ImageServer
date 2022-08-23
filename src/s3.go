@@ -177,7 +177,7 @@ func listMetaFiles(minioClient *minio.Client, dirs map[string]string, eventChan 
 			ctx, cancel := context.WithTimeout(context.Background(), config.PollingPeriod)
 			defer cancel()
 			printDebug("Looking for meta files in ", dir, " | config.geonamesFilename: ", config.GeonamesFilename)
-			for obj := range minioClient.ListObjects(ctx, config.S3.BucketName, minio.ListObjectsOptions{Prefix: dir, Recursive: true}) {
+			for obj := range minioClient.ListObjects(ctx, config.S3.BucketName, minio.ListObjectsOptions{Prefix: dir + "/", Recursive: true}) {
 				if obj.Err != nil {
 					continue
 				}
@@ -201,7 +201,7 @@ func listMetaFiles(minioClient *minio.Client, dirs map[string]string, eventChan 
 				}
 
 				// features
-				if len(config.FeaturesExtension) > 0 && strings.HasSuffix(obj.Key, config.FeaturesExtension) {
+				if config.featuresExtensionRegexp != nil && config.featuresExtensionRegexp.MatchString(obj.Key) {
 					parts := strings.Split(obj.Key, "/")
 					filename := parts[len(parts)-1]
 					formattedFilename := formatFileName(dir + "/" + filename)

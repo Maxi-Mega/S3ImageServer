@@ -8,6 +8,7 @@ import (
 	"os"
 	"path"
 	"reflect"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -40,19 +41,20 @@ type ImageGroup struct {
 type Config struct {
 	S3 S3Config `yaml:"s3"`
 
-	BasePath               string       `yaml:"basePath"`
-	WindowTitle            string       `yaml:"windowTitle"`
-	ScaleInitialPercentage uint8        `yaml:"scaleInitialPercentage"`
-	PreviewFilename        string       `yaml:"previewFilename"`
-	GeonamesFilename       string       `yaml:"geonamesFilename"`
-	FeaturesExtension      string       `yaml:"featuresExtension"`
-	FeaturesPropertyName   string       `yaml:"featuresPropertyName"`
-	FullProductExtension   string       `yaml:"fullProductExtension"`
-	FullProductProtocol    string       `yaml:"fullProductProtocol"`
-	FullProductRootUrl     string       `yaml:"fullProductRootUrl"`
-	FullProductSignedUrl   bool         `yaml:"fullProductSignedUrl"`
-	ImageGroups            []ImageGroup `yaml:"imageGroups"`
-	imageTypes             []ImageType
+	BasePath                string `yaml:"basePath"`
+	WindowTitle             string `yaml:"windowTitle"`
+	ScaleInitialPercentage  uint8  `yaml:"scaleInitialPercentage"`
+	PreviewFilename         string `yaml:"previewFilename"`
+	GeonamesFilename        string `yaml:"geonamesFilename"`
+	FeaturesExtensionRegexp string `yaml:"featuresExtensionRegexp"`
+	featuresExtensionRegexp *regexp.Regexp
+	FeaturesPropertyName    string       `yaml:"featuresPropertyName"`
+	FullProductExtension    string       `yaml:"fullProductExtension"`
+	FullProductProtocol     string       `yaml:"fullProductProtocol"`
+	FullProductRootUrl      string       `yaml:"fullProductRootUrl"`
+	FullProductSignedUrl    bool         `yaml:"fullProductSignedUrl"`
+	ImageGroups             []ImageGroup `yaml:"imageGroups"`
+	imageTypes              []ImageType
 
 	LogLevel      string                 `yaml:"logLevel"`
 	ColorLogs     bool                   `yaml:"colorLogs"`
@@ -217,6 +219,14 @@ func loadConfigFromFile(filePath string) (Config, error) {
 	if !valid {
 		return Config{}, errors.New(strings.Join(errs, "\n- "))
 	}
+
+	if cfg.FeaturesExtensionRegexp != "" {
+		cfg.featuresExtensionRegexp, err = regexp.Compile(cfg.FeaturesExtensionRegexp)
+		if err != nil {
+			return Config{}, fmt.Errorf("invalid features extension regexp: %w", err)
+		}
+	}
+
 	for _, group := range cfg.ImageGroups {
 		cfg.imageTypes = append(cfg.imageTypes, group.Types...)
 	}
@@ -232,6 +242,8 @@ func (config Config) String() string {
 	result += "scaleInitialPercentage: " + strconv.FormatUint(uint64(config.ScaleInitialPercentage), 10) + "\n"
 	result += "previewFilename: " + config.PreviewFilename + "\n"
 	result += "geonamesFilename: " + config.GeonamesFilename + "\n"
+	result += "featuresExtensionRegexp: " + config.FeaturesExtensionRegexp + "\n"
+	result += "featuresPropertyName: " + config.FeaturesPropertyName + "\n"
 	result += "fullProductExtension: " + config.FullProductExtension + "\n"
 	result += "fullProductProtocol: " + config.FullProductProtocol + "\n"
 	result += "fullProductRootUrl: " + config.FullProductRootUrl + "\n"

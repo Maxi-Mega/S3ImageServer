@@ -10,7 +10,7 @@ windowTitle: "S3 Image Viewer"
 scaleInitialPercentage: 50
 previewFilename: "preview.jpg"
 geonamesFilename: "geonames.json"
-featuresExtension: ".features.json"
+featuresExtensionRegexp: "\\.features\\.json$"
 featuresPropertyName: "detection"
 fullProductExtension: "tif"
 fullProductProtocol: "protocol://"

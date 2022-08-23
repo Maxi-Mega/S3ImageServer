@@ -49,6 +49,10 @@ func (image S3Image) getAssociatedGeonamesPath() string {
 	return image.FormattedKey[:strings.LastIndex(image.FormattedKey, "@")+1] + config.GeonamesFilename
 }
 
+func (image S3Image) String() string {
+	return image.S3Key
+}
+
 type S3Images []S3Image
 
 func (images S3Images) findImageByKey(key string) (image *S3Image, found bool) {

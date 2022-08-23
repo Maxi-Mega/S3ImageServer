@@ -50,6 +50,7 @@ func parseFeatures(filePath string) (Features, error) {
 	features := make(Features)
 	for _, rawFeature := range rawFeatures.Features {
 		detection := strings.Title(rawFeature.Properties[config.FeaturesPropertyName].(string))
+		// TODO: inflection ?
 		if !strings.HasSuffix(detection, "s") {
 			detection += "s"
 		}
