@@ -58,7 +58,7 @@ func getImageFromBucket(minioClient *minio.Client, objKey, formattedKey, imgType
 	return os.Chtimes(filePath, lastModTime, lastModTime)
 }
 
-func getGeonamesFileFromBucket(minioClient *minio.Client, objKey, formattedFilename, targetImg string, eventChan chan event) error {
+func getGeonamesFileFromBucket(minioClient *minio.Client, objKey string, objDate time.Time, formattedFilename, targetImg string, eventChan chan event) error {
 	filePath := path.Join(config.CacheDir, formattedFilename)
 	err := getFileFromBucket(minioClient, objKey, filePath)
 	if err != nil {
@@ -67,7 +67,7 @@ func getGeonamesFileFromBucket(minioClient *minio.Client, objKey, formattedFilen
 	if timer, found := timers[formattedFilename]; found {
 		timer.Stop()
 	}
-	geonames, err := parseGeonames(filePath)
+	geonames, err := parseGeonames(filePath, objDate)
 	if err != nil {
 		return err
 	}
@@ -101,7 +101,7 @@ func getGeonamesFileFromBucket(minioClient *minio.Client, objKey, formattedFilen
 	return nil
 }
 
-func getFeaturesFileFromBucket(minioClient *minio.Client, objKey string, formattedFilename string, targetImg string, eventChan chan event) error {
+func getFeaturesFileFromBucket(minioClient *minio.Client, objKey string, objDate time.Time, formattedFilename string, targetImg string, eventChan chan event) error {
 	filePath := path.Join(config.CacheDir, formattedFilename)
 	err := getFileFromBucket(minioClient, objKey, filePath)
 	if err != nil {
@@ -110,7 +110,7 @@ func getFeaturesFileFromBucket(minioClient *minio.Client, objKey string, formatt
 	if timer, found := timers[formattedFilename]; found {
 		timer.Stop()
 	}
-	features, err := parseFeatures(filePath)
+	features, err := parseFeatures(filePath, objDate)
 	if err != nil {
 		return err
 	}
@@ -136,7 +136,7 @@ func getFeaturesFileFromBucket(minioClient *minio.Client, objKey string, formatt
 		EventType: eventFeatures,
 		EventObj: EventFeatures{
 			ImgKey:   targetImg,
-			Features: features,
+			Features: features.Objects,
 		},
 		EventDate: time.Now().String(),
 		source:    "getGeonamesFileFromBucket",
@@ -185,13 +185,20 @@ func listMetaFiles(minioClient *minio.Client, dirs map[string]string, eventChan 
 				// geonames
 				if len(config.GeonamesFilename) > 0 && strings.HasSuffix(obj.Key, "/"+config.GeonamesFilename) {
 					formattedFilename := formatFileName(dir + "/" + config.GeonamesFilename)
-					if _, alreadyInCache := geonamesCache[formattedFilename]; alreadyInCache {
+					if geonames, alreadyInCache := geonamesCache[formattedFilename]; alreadyInCache {
+						if geonames.lastUpdate.Before(obj.LastModified) {
+							err := getGeonamesFileFromBucket(minioClient, obj.Key, obj.LastModified, formattedFilename, targetImg, eventChan)
+							if err != nil {
+								printError(err, false)
+								continue
+							}
+						}
 						tempFullProductLinksCache[dir] = append(tempFullProductLinksCache[dir], getCacheFileLink(strings.ReplaceAll(dir, "/", "@"), config.GeonamesFilename))
 						continue
 					}
 					printDebug("Found geonames file: ", obj.Key)
 					// targetImg := strings.ReplaceAll(dir, "/", "@") + config.PreviewFilename
-					err := getGeonamesFileFromBucket(minioClient, obj.Key, formattedFilename, targetImg, eventChan)
+					err := getGeonamesFileFromBucket(minioClient, obj.Key, obj.LastModified, formattedFilename, targetImg, eventChan)
 					if err != nil {
 						printError(err, false)
 						continue
@@ -205,12 +212,18 @@ func listMetaFiles(minioClient *minio.Client, dirs map[string]string, eventChan 
 					parts := strings.Split(obj.Key, "/")
 					filename := parts[len(parts)-1]
 					formattedFilename := formatFileName(dir + "/" + filename)
-					if _, alreadyInCache := featuresCache[formattedFilename]; alreadyInCache {
+					if ftr, alreadyInCache := featuresCache[formattedFilename]; alreadyInCache {
+						if ftr.lastUpdate.Before(obj.LastModified) {
+							err := getFeaturesFileFromBucket(minioClient, obj.Key, obj.LastModified, formattedFilename, targetImg, eventChan)
+							if err != nil {
+								printError(err, false)
+							}
+						}
 						tempFullProductLinksCache[dir] = append(tempFullProductLinksCache[dir], getCacheFileLink(strings.ReplaceAll(dir, "/", "@"), filename))
 						continue
 					}
 					printDebug("Found features file: ", obj.Key)
-					err := getFeaturesFileFromBucket(minioClient, obj.Key, formattedFilename, targetImg, eventChan)
+					err := getFeaturesFileFromBucket(minioClient, obj.Key, obj.LastModified, formattedFilename, targetImg, eventChan)
 					if err != nil {
 						printError(err, false)
 						continue
@@ -366,7 +379,14 @@ func listenToBucket(minioClient *minio.Client, eventChan chan event) {
 					if !found {
 						continue
 					}
-					err := getGeonamesFileFromBucket(minioClient, objKey, img.getAssociatedGeonamesPath(), img.FormattedKey, eventChan)
+					fmt.Println("Event time:", e.EventTime)
+					//                          2016–09–08T22:34:38.226Z
+					objDate, err := time.Parse("2006-01-02T15:04:05.000Z", e.EventTime)
+					if err != nil {
+						printError(fmt.Errorf("failed to parse event time: %w", err), false)
+						objDate = time.Now()
+					}
+					err = getGeonamesFileFromBucket(minioClient, objKey, objDate, img.getAssociatedGeonamesPath(), img.FormattedKey, eventChan)
 					if err != nil {
 						printError(err, false)
 						continue

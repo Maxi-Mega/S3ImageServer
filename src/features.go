@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 )
 
 type RawFeaturesFile struct { // TODO: remove useless fields
@@ -18,13 +19,16 @@ type RawFeaturesFile struct { // TODO: remove useless fields
 	} `json:"features"`
 }
 
-type Features map[string]uint
+type Features struct {
+	Objects    map[string]uint `json:"objects"`
+	lastUpdate time.Time
+}
 
 func (features Features) toJson() string {
-	if features == nil {
+	if features.Objects == nil {
 		return "{}"
 	}
-	result, err := json.Marshal(features)
+	result, err := json.Marshal(features.Objects)
 	if err != nil {
 		printError(fmt.Errorf("failed to marshal features to json: %v", err), false)
 		return "{}"
@@ -32,7 +36,7 @@ func (features Features) toJson() string {
 	return string(result)
 }
 
-func parseFeatures(filePath string) (Features, error) {
+func parseFeatures(filePath string, objDate time.Time) (Features, error) {
 	fileContent, err := os.ReadFile(filePath)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -47,17 +51,20 @@ func parseFeatures(filePath string) (Features, error) {
 		return Features{}, fmt.Errorf("failed to unmarshal from json the content of the features file %q: %v", filePath, err)
 	}
 
-	features := make(Features)
+	features := Features{
+		Objects:    make(map[string]uint),
+		lastUpdate: objDate,
+	}
 	for _, rawFeature := range rawFeatures.Features {
 		detection := strings.Title(rawFeature.Properties[config.FeaturesPropertyName].(string))
 		// TODO: inflection ?
 		if !strings.HasSuffix(detection, "s") {
 			detection += "s"
 		}
-		if count, found := features[detection]; found {
-			features[detection] = count + 1
+		if count, found := features.Objects[detection]; found {
+			features.Objects[detection] = count + 1
 		} else {
-			features[detection] = 1
+			features.Objects[detection] = 1
 		}
 	}
 	return features, nil

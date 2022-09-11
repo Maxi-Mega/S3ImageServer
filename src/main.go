@@ -11,13 +11,12 @@ import (
 	"time"
 )
 
-var version = "2.5.0"
+var version = "2.5.1-dev"
 
 const defaultTempDirName = "s3_image_server"
 
 var config Config
 
-// var imagesCache map[string]time.Time
 var imagesCache S3Images
 var imagesCacheMutex sync.Mutex
 var timers map[string]*time.Timer
@@ -30,8 +29,6 @@ var fullProductLinksCache map[string][]string // TODO: rename ?
 var fullProductLinksCacheMutex sync.Mutex
 
 var pollMutex sync.Mutex
-
-// --config config.yml
 
 func main() {
 	var configPath string
@@ -96,7 +93,6 @@ func main() {
 		if err != nil {
 			exitWithError(err)
 		}
-		// imagesCache = map[string]time.Time{}
 		imagesCache = S3Images{}
 	} else {
 		imagesCache = generateImagesCache()
@@ -110,7 +106,6 @@ func main() {
 	go func() {
 		if config.PollingMode {
 			pollBucket(minioClient, eventChan)
-			// err = startWebServer(config.WebServerPort)
 			err = startWSServer(config.WebServerPort, eventChan)
 		} else {
 			listenToBucket(minioClient, eventChan)

@@ -47,8 +47,8 @@
                 while (modalFeatures.hasChildNodes()) {
                     modalFeatures.removeChild(modalFeatures.firstChild);
                 }
-                const features = jsonData["features"];
-                if (Object.keys(features).length > 0) {
+                const features = jsonData["features"]["objects"];
+                if (features && Object.keys(features).length > 0) {
                     document.getElementById("modal-features-title").style.display = "block";
                     document.getElementById("modal-features").style.display = "block";
                     for (const feature in features) {
@@ -210,7 +210,7 @@
         const img = parentDiv.querySelector("div.features-container img");
         fetch("{{.BasePath}}/infos/" + img.alt).then(response => {
             response.json().then(jsonData => {
-                const features = jsonData.data["features"];
+                const features = jsonData.data["features"]?.objects;
                 if (features && Object.keys(features).length > 0) {
                     const pre = parentDiv.querySelector("pre.image-features");
                     for (const feature in features) {
@@ -380,6 +380,7 @@
                         if (parentDiv != null) {
                             const pre = parentDiv.querySelector("pre.image-features");
                             const features = event["event_obj"]["features"];
+                            pre.innerHTML = "";
                             for (const feature in features) {
                                 pre.innerHTML += `&nbsp;${feature}: ${features[feature]}&nbsp;\n`
                             }
