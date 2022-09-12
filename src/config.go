@@ -28,9 +28,11 @@ type S3Config struct {
 }
 
 type ImageType struct {
-	Name        string `yaml:"name" json:"name"`
-	DisplayName string `yaml:"displayName" json:"displayName"`
-	Path        string `yaml:"path" json:"path"`
+	Name          string `yaml:"name" json:"name"`
+	DisplayName   string `yaml:"displayName" json:"displayName"`
+	ProductPrefix string `yaml:"productPrefix" json:"productPrefix"`
+	ProductRegexp string `yaml:"productRegexp" json:"productRegexp"`
+	productRegexp *regexp.Regexp
 }
 
 type ImageGroup struct {
@@ -166,10 +168,10 @@ func (config *Config) checkValidity() (ok bool, errs []string) {
 			} else {
 				imageTypes[imageType.Name] = struct{}{}
 			}
-			if _, exists := imagePaths[imageType.Path]; exists {
-				errs = append(errs, "image path '"+imageType.Path+"' is present in multiple groups")
+			if _, exists := imagePaths[imageType.ProductPrefix]; exists {
+				errs = append(errs, "image path '"+imageType.ProductPrefix+"' is present in multiple groups")
 			} else {
-				imagePaths[imageType.Path] = struct{}{}
+				imagePaths[imageType.ProductPrefix] = struct{}{}
 			}
 		}
 	}
@@ -228,12 +230,22 @@ func loadConfigFromFile(filePath string) (Config, error) {
 	}
 
 	for _, group := range cfg.ImageGroups {
-		cfg.imageTypes = append(cfg.imageTypes, group.Types...)
+		for i := range group.Types {
+			imgType := group.Types[i]
+			if imgType.ProductRegexp == "" {
+				return Config{}, fmt.Errorf("no product regexp provided for type %q of group %q", imgType.Name, group.GroupName)
+			}
+			imgType.productRegexp, err = regexp.Compile(imgType.ProductRegexp)
+			if err != nil {
+				return Config{}, fmt.Errorf("invalid product regexp for type %q of group %q: %w", imgType.Name, group.GroupName, err)
+			}
+			cfg.imageTypes = append(cfg.imageTypes, imgType)
+		}
 	}
 	return cfg, nil
 }
 
-func (config Config) String() string {
+func (config *Config) String() string {
 	result := "S3:\n"
 	s3 := config.S3
 	result += fmt.Sprintf("\tendPoint: %s\n\tbucketName: %s\n\taccessId: %s\n\taccessSecret: %s\n", s3.EndPoint, s3.BucketName, s3.AccessId, s3.AccessSecret)

@@ -254,13 +254,16 @@ func extractFilesFromBucket(minioClient *minio.Client, eventChan chan event) err
 	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
 	defer cancel()
 	for _, imgType := range config.imageTypes {
-		for obj := range minioClient.ListObjects(ctx, config.S3.BucketName, minio.ListObjectsOptions{Prefix: imgType.Path, Recursive: true}) {
+		for obj := range minioClient.ListObjects(ctx, config.S3.BucketName, minio.ListObjectsOptions{Prefix: imgType.ProductPrefix, Recursive: true}) {
 			if obj.Err != nil {
 				handleS3Error(fmt.Errorf("no connection to S3 server => exit: %v", obj.Err))
 				return obj.Err
 			}
 
-			if !strings.HasSuffix(obj.Key, config.PreviewFilename) {
+			/*if !strings.HasSuffix(obj.Key, config.PreviewFilename) {
+				continue
+			}*/
+			if !imgType.productRegexp.MatchString(strings.TrimPrefix(obj.Key, imgType.ProductPrefix)) {
 				continue
 			}
 

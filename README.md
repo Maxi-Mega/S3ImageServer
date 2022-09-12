@@ -1,4 +1,4 @@
-# S3ImageServer [V2.5.1]
+# S3ImageServer [V2.5.2]
 
 ### Browse images from S3 bucket
 
