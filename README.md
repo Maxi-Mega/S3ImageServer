@@ -25,25 +25,29 @@ windowTitle: "S3 Image Viewer"
 scaleInitialPercentage: 50
 previewFilename: "preview.jpg"
 geonamesFilename: "geonames.json"
-featuresExtension: ".features.json"
+featuresExtensionRegexp: "sample.*\\.json$"
 featuresPropertyName: "detection"
 fullProductExtension: "tif"
 fullProductProtocol: "protocol://"
+fullProductRootUrl: "http://a.b.c.d:5000"
 fullProductSignedUrl: false
 imageGroups:
   - groupName: "Group 1"
     types:
       - name: "TYPE1"
         displayName: "Type 1"
-        path: "my-prefix/TYPE1"
+        productPrefix: "my-prefix/TYPE1/"
+        productRegexp: "^(?P<parent>.*/DIR_[^/]*/[^/]*)/preview.jpg$"
       - name: "TYPE2"
         displayName: "Type 2"
-        path: "my-prefix/TYPE2"
+        productPrefix: "my-prefix/TYPE2/"
+        productRegexp: "^(?P<parent>.*/DIR_[^/]*/[^/]*)/preview.jpg$"
   - groupName: "Group 2"
     types:
       - name: "TYPE3"
         displayName: "Type 3"
-        path: "my-prefix/TYPE3"
+        productPrefix: "my-prefix/TYPE3/"
+        productRegexp: "^(?P<parent>.*/DIR_[^/]*/[^/]*)/preview.jpg$"
 
 logLevel: "info"
 colorLogs: false
