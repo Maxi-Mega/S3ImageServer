@@ -6,9 +6,12 @@
         <meta charset="utf-8">
         <style>
             :root {
+                --color-glacier-blue: #ccd7d9;
+                --color-secondary-blue: #20abfe;
+
                 --header-text-color: #101010;
                 /*TODO: --header-input-color: var(#0375fa);*/
-                --header-background-color: #ccd7d9;
+                --header-background-color: var(--color-glacier-blue);
             }
 
             body {
@@ -201,114 +204,160 @@
                 width: 100%;
                 height: 100%;
                 justify-content: space-around;
-                align-items: center;
+                align-items: flex-start;
                 font-family: "DejaVu Sans", sans-serif;
             }
 
-            #modal .previous-next-image-container {
-                position: absolute;
-                top: 40px;
-                right: 20px;
-                margin-right: 5px;
+            #modal-content {
+                min-width: 95%;
+                max-width: 95%;
+                margin-top: 50px;
+                padding: 10px;
+                display: flex;
+                flex-flow: column nowrap;
+                align-items: center;
+                justify-content: space-between;
+                background-color: var(--color-glacier-blue);
             }
 
-            #modal .previous-next-image-container > span {
-                color: #bbbbbb;
-                font-size: 2em;
-                cursor: pointer;
-                -webkit-touch-callout: none;
-                -webkit-user-select: none;
-                -khtml-user-select: none;
-                -moz-user-select: none;
-                -ms-user-select: none;
-                user-select: none;
+            #modal-header {
+                width: 100%;
+                margin-bottom: 10px;
+                display: flex;
+                flex-flow: row nowrap;
+                align-items: center;
+                justify-content: space-evenly;
             }
 
-            #modal .previous-next-image-container > span:hover {
-                color: white;
+            #modal-header p {
+                margin: 1px 0;
             }
 
-            #modal .previous-next-image-container > span:active {
+            #modal-header > * {
+                padding: 5px 10px;
+            }
+
+            #modal #details {
+                width: 60%;
+                height: 40px;
+                border: 2px solid var(--color-secondary-blue);
+                background-color: white;
+            }
+
+            #modal #details span {
                 font-weight: bold;
             }
 
-            #modal-content {
-                min-width: 50%;
-                max-width: 90%;
+            #modal #details #characteristics {
                 display: flex;
                 flex-flow: row nowrap;
                 align-items: center;
                 justify-content: space-between;
             }
 
+            #modal #details #characteristics #features-type {
+                font-weight: normal;
+            }
+
+            #modal #geonames {
+                width: 30%;
+                height: 40px;
+                margin: 0;
+                font-size: 1rem;
+                overflow-y: auto;
+                line-height: 2.6;
+                border: 2px solid var(--color-secondary-blue);
+                background-color: white;
+            }
+
+            #modal #geonames #geonames-full {
+                line-height: 1.2;
+            }
+
+            #modal .previous-next-image-container {
+                width: 5%;
+                padding-right: 5px;
+                padding-left: 15px;
+                display: flex;
+                flex-flow: row nowrap;
+                align-items: center;
+                justify-content: space-evenly;
+            }
+
+            #modal .previous-next-image-container p {
+                color: var(--color-secondary-blue);
+                font-size: 2em;
+                cursor: pointer;
+            }
+
+            #modal .previous-next-image-container > p:hover {
+                opacity: 0.5;
+            }
+
+            #modal .previous-next-image-container #previous-image-button {
+                transform: rotate(180deg) translateY(-2px);
+            }
+
+            #modal #content {
+                width: 95%;
+                display: flex;
+                flex-flow: row nowrap;
+                align-items: center;
+                justify-content: space-around;
+            }
+
+            #modal #content #img-container {
+                width: 40%;
+                margin-right: 10px;
+            }
+
+            #modal #content #modal-img {
+                max-width: 100%;
+            }
+
             #modal-img.show {
                 z-index: 1000;
-                border: 2px solid white;
+                border: 2px solid var(--color-secondary-blue);
                 max-width: 50vw;
                 max-height: 80vh;
                 margin-right: 10px;
             }
 
-            #modal-details {
+            #modal #content #content-details {
+                width: 60%;
                 display: flex;
-                flex-flow: column wrap;
-                padding: 20px;
-                margin-left: 10px;
-                background-color: #959595;
-                color: black;
-                border: 2px solid white;
+                flex-flow: column nowrap;
+                align-self: baseline;
             }
 
-            #geonames {
-                margin-top: 0;
-                margin-bottom: 20px;
-                font-size: 13px;
-                min-height: 150px;
-                max-height: 207px;
-                overflow-x: clip;
-                overflow-y: auto;
-                background-color: #bbb;
-            }
-
-            #modal-details h2 {
-                max-width: max-content;
-                margin-top: 0;
-                margin-left: 50%;
-                transform: translateX(-50%);
-                font-size: 17px;
-            }
-
-            #modal-details h3 {
-                margin: 5px 0;
-                font-size: 13px;
-                font-weight: normal;
-            }
-
-            #modal-details hr {
-                border-bottom: 0;
-                width: 50%;
-            }
-
-            #modal-features-title, #modal-links-title {
-                margin-top: 10px !important;
-            }
-
-            #modal-features, #modal-links {
-                width: 100%;
-                max-height: 250px;
-                margin: 0;
-                padding: 0;
+            #modal #content-details #modal-links {
+                height: 5em;
+                margin-bottom: 10px;
+                padding: 5px 10px;
+                border: 2px solid var(--color-secondary-blue);
+                background-color: white;
                 overflow-y: auto;
             }
 
-            #modal-links li {
+            #modal #content-details #modal-links li {
                 list-style-type: none;
-                margin: 5px 0;
+                margin: 3px 0;
                 font-size: 14px;
             }
 
-            #modal-content a {
+            #modal #content-details #modal-links a {
                 color: black;
+            }
+
+            #modal #content-details #modal-thumbnails {
+
+            }
+
+            .no-copy {
+                -webkit-user-select: none; /* Chrome all / Safari all */
+                -moz-user-select: none; /* Firefox all */
+                -ms-user-select: none; /* IE 10+ */
+                user-select: none; /* Likely future */
             }
 
             @keyframes fadein {
@@ -375,27 +424,30 @@
         {{end}}
     </div>
     <div id="modal" title="Click to close">
-        <div class="previous-next-image-container">
-            <span id="previous-image-button" title="Previous image">&slarr;</span>
-            <span id="next-image-button" title="Next image">&srarr;</span>
-        </div>
         <div id="modal-content">
-            <img id="modal-img" src="" alt=""/>
-            <div id="modal-details">
-                <h2 id="geonames-title">Place names</h2>
+            <div id="modal-header">
+                <div id="details">
+                    <p>Name: <span id="modal-img-name"></span></p>
+                    <div id="characteristics">
+                        <p>Type: <span id="modal-img-type"></span></p>
+                        <p>Generation date: <span id="modal-img-date"></span></p>
+                        <p><span id="features-type"></span><span id="features-count"></span></p>
+                    </div>
+                </div>
                 <pre id="geonames"></pre>
-                <h2>Characteristics</h2>
-                <h3 id="modal-img-type"></h3>
-                <h3 id="modal-img-name"></h3>
-                <h3 id="modal-img-date"></h3>
-                <h2 id="modal-features-title">Features</h2>
-                <ul id="modal-features"></ul>
-                <h2 id="modal-links-title">Contents</h2>
-                <ul id="modal-links" title="Click to open with external application">
-                    {{/*<li>
-                        <a href=""></a>
-                    </li>*/}}
-                </ul>
+                <div class="previous-next-image-container no-copy">
+                    <p id="previous-image-button" title="Previous image">&#10148;</p>
+                    <p id="next-image-button" title="Next image">&#10148;</p>
+                </div>
+            </div>
+            <div id="content">
+                <div id="img-container">
+                    <img id="modal-img" src="" alt=""/>
+                </div>
+                <div id="content-details">
+                    <div id="modal-links"></div>
+                    <div id="modal-thumbnails"></div>
+                </div>
             </div>
         </div>
     </div>
@@ -490,6 +542,11 @@
             });
 
             updateScale();
+
+            document.querySelector("#modal #modal-header .previous-next-image-container").addEventListener("click", (ev) => {
+                // Prevent previous/next misclick
+                ev.stopImmediatePropagation();
+            });
 
             document.getElementById("previous-image-button").addEventListener("click", (ev) => {
                 ev.stopImmediatePropagation();

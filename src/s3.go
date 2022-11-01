@@ -260,9 +260,6 @@ func extractFilesFromBucket(minioClient *minio.Client, eventChan chan event) err
 				return obj.Err
 			}
 
-			/*if !strings.HasSuffix(obj.Key, config.PreviewFilename) {
-				continue
-			}*/
 			if !imgType.productRegexp.MatchString(strings.TrimPrefix(obj.Key, imgType.ProductPrefix)) {
 				continue
 			}

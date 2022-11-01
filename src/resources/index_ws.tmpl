@@ -43,28 +43,20 @@
         fetch("{{.BasePath}}/infos/" + img.alt).then(response => { // .replaceAll("@", "/")
             response.json().then(jsonData => {
                 jsonData = jsonData.data;
-                document.getElementById("modal-img-date").innerText = "Generation date: " + jsonData["date"];
-                while (modalFeatures.hasChildNodes()) {
-                    modalFeatures.removeChild(modalFeatures.firstChild);
-                }
+                document.getElementById("modal-img-date").innerText = jsonData["date"];
                 const features = jsonData["features"]["objects"];
                 if (features && Object.keys(features).length > 0) {
-                    document.getElementById("modal-features-title").style.display = "block";
-                    document.getElementById("modal-features").style.display = "block";
-                    for (const feature in features) {
-                        const li = document.createElement("li");
-                        li.innerText = `${feature}: ${features[feature]}`;
-                        modalFeatures.appendChild(li);
-                    }
+                    const firstFeature = Object.keys(features)[0];
+                    document.getElementById("features-type").innerText = firstFeature + ": ";
+                    document.getElementById("features-count").innerText = features[firstFeature];
                 } else {
-                    document.getElementById("modal-features-title").style.display = "none";
-                    document.getElementById("modal-features").style.display = "none";
+                    document.getElementById("features-type").innerText = "";
+                    document.getElementById("features-count").innerText = "";
                 }
                 while (modalLinks.hasChildNodes()) {
                     modalLinks.removeChild(modalLinks.firstChild);
                 }
                 if (jsonData["links"].length > 0) {
-                    document.getElementById("modal-links-title").style.display = "block";
                     for (const link of jsonData["links"]) {
                         const li = document.createElement("li");
                         const a = document.createElement("a");
@@ -82,15 +74,13 @@
                         modalLinks.appendChild(li);
                     }
                 } else {
-                    document.getElementById("modal-links-title").style.display = "none";
                 }
-                document.getElementById("geonames").innerText = jsonData["geonames"];
                 if (jsonData["geonames"].length > 0) {
-                    document.getElementById("geonames-title").style.display = "block";
-                    document.getElementById("geonames").style.display = "block";
+                    const mainGeonames = jsonData["geonames"].split("\n").slice(0, 3).map(geoname => geoname.trim());
+                    document.getElementById("geonames").innerHTML = mainGeonames.join(" / ")
+                        + '<br /><div id="geonames-full">' + jsonData['geonames'] + '</div>';
                 } else {
-                    document.getElementById("geonames-title").style.display = "none";
-                    document.getElementById("geonames").style.display = "none";
+                    document.getElementById("geonames").innerHTML = "";
                 }
             }).catch(reason => {
                 console.warn("Failed to jsonify links:", reason);
@@ -107,8 +97,8 @@
             imgName = imgName.substring(imgName.indexOf("\n") + 1);
         }*/
         const rawType = parentDiv.getAttribute("img-type");
-        document.getElementById("modal-img-type").innerText = "Type: " + imageTypes.find(imgType => imgType.name === rawType).displayName;
-        document.getElementById("modal-img-name").innerText = "Name: " + imgName;
+        document.getElementById("modal-img-type").innerText = imageTypes.find(imgType => imgType.name === rawType).displayName;
+        document.getElementById("modal-img-name").innerText = imgName;
         modal.style.display = "flex";
     }
 
@@ -201,9 +191,9 @@
     function closeModal() {
         modalImg.classList.remove("show");
         modal.style.display = "";
-        document.getElementById("modal-links-title").style.display = "none";
+        /*document.getElementById("modal-links-title").style.display = "none";
         document.getElementById("geonames-title").style.display = "none";
-        document.getElementById("geonames").style.display = "none";
+        document.getElementById("geonames").style.display = "none";*/
     }
 
     function fetchFeatures(parentDiv) {
