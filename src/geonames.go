@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 	"time"
 )
@@ -27,7 +28,7 @@ type Geonames struct {
 	lastUpdate time.Time
 }
 
-func (geonames Geonames) String() string {
+func (geonames *Geonames) String() string {
 	jsonBytes, err := json.MarshalIndent(geonames, "", "  ")
 	if err != nil {
 		return err.Error()
@@ -35,7 +36,7 @@ func (geonames Geonames) String() string {
 	return string(jsonBytes)
 }
 
-func (geonames Geonames) format() string {
+func (geonames *Geonames) format() string {
 	var final string
 
 	for _, country := range geonames.Objects {
@@ -65,7 +66,7 @@ func (geonames Geonames) format() string {
 	return final
 }
 
-func (geonames Geonames) getTopLevel() string {
+func (geonames *Geonames) getTopLevel() string {
 	if len(geonames.Objects) > 0 {
 		name := geonames.Objects[0].Name
 		states := geonames.Objects[0].States
@@ -85,6 +86,26 @@ func (geonames Geonames) getTopLevel() string {
 	return "no geoname found"
 }
 
+func (geonames *Geonames) sort() {
+	sort.Slice(geonames.Objects, func(i, j int) bool {
+		return strings.Compare(strings.ToLower(geonames.Objects[i].Name), strings.ToLower(geonames.Objects[j].Name)) < 0
+	})
+
+	for o := range geonames.Objects {
+		obj := geonames.Objects[o]
+		sort.Slice(obj.States, func(i, j int) bool {
+			return strings.Compare(strings.ToLower(obj.States[i].Name), strings.ToLower(obj.States[j].Name)) < 0
+		})
+
+		for s := range obj.States {
+			state := obj.States[s]
+			sort.Slice(state.Counties, func(i, j int) bool {
+				return strings.Compare(strings.ToLower(state.Counties[i].Name), strings.ToLower(state.Counties[j].Name)) < 0
+			})
+		}
+	}
+}
+
 func parseGeonames(filePath string, objDate time.Time) (Geonames, error) {
 	fileContent, err := os.ReadFile(filePath)
 	if err != nil {
@@ -100,6 +121,7 @@ func parseGeonames(filePath string, objDate time.Time) (Geonames, error) {
 		return Geonames{}, fmt.Errorf("failed to unmarshal from json the content of the geonames file %q: %v", filePath, err)
 	}
 	geonames.lastUpdate = objDate
+	geonames.sort()
 
 	return geonames, nil
 }
