@@ -11,13 +11,14 @@ import (
 	"time"
 )
 
-var version = "2.5.2-dev"
+var version = "3.0.0-SNAPSHOT-dev"
 
 const defaultTempDirName = "s3_image_server"
 
 var config Config
 
-var imagesCache S3Images
+var mainCache ImageCache
+var thumbnailsCache ImageCache
 var imagesCacheMutex sync.Mutex
 var timers map[string]*time.Timer
 var timersMutex sync.Mutex
@@ -88,15 +89,8 @@ func main() {
 
 	printDebug("S3 endpoint:", minioClient.EndpointURL())
 
-	if _, err = os.Stat(config.CacheDir); os.IsNotExist(err) {
-		err = os.Mkdir(config.CacheDir, 0750)
-		if err != nil {
-			exitWithError(err)
-		}
-		imagesCache = S3Images{}
-	} else {
-		imagesCache = generateImagesCache()
-	}
+	mainCache = createCache(config.mainCacheDir)
+	thumbnailsCache = createCache(config.thumbnailsCacheDir)
 
 	eventChan := make(chan event, 1)
 	timers = map[string]*time.Timer{}
@@ -106,11 +100,10 @@ func main() {
 	go func() {
 		if config.PollingMode {
 			pollBucket(minioClient, eventChan)
-			err = startWSServer(config.WebServerPort, eventChan)
 		} else {
 			listenToBucket(minioClient, eventChan)
-			err = startWSServer(config.WebServerPort, eventChan)
 		}
+		err = startWSServer(config.WebServerPort, eventChan, minioClient)
 		if err != nil {
 			exitWithError(err)
 		}
@@ -121,7 +114,7 @@ func main() {
 		exitWithError(fmt.Errorf("failed to extract files from bucket: %v", err))
 	}
 
-	printDebug("Found images have been stored in", config.CacheDir, "!")
+	printDebug("S3 images have been stored in ", config.mainCacheDir)
 
 	wg := new(sync.WaitGroup)
 	wg.Add(1)

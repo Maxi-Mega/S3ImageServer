@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/minio/minio-go/v7"
 	"os"
-	"path"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -20,8 +20,8 @@ func getFileFromBucket(minioClient *minio.Client, objKey, filePath string) error
 	return nil
 }
 
-func getImageFromBucket(minioClient *minio.Client, objKey, formattedKey, imgType string, lastModTime time.Time, eventChan chan event, updateOnly bool) error {
-	filePath := path.Join(config.CacheDir, formattedKey)
+func getImageFromBucket(cache ImageCache, minioClient *minio.Client, objKey, formattedKey, imgType string, lastModTime time.Time, eventChan chan event, updateOnly bool) error {
+	filePath := filepath.Join(cache.pathOnDisk, formattedKey)
 	err := getFileFromBucket(minioClient, objKey, filePath)
 	if err != nil {
 		return err
@@ -45,8 +45,8 @@ func getImageFromBucket(minioClient *minio.Client, objKey, formattedKey, imgType
 	}
 	timers[imageId] = time.AfterFunc(config.RetentionPeriod, func() {
 		// imagesCacheMutex.Lock()
-		// delete(imagesCache, formattedKey)
-		imagesCache.deleteImage(formattedKey)
+		// delete(mainCache, formattedKey)
+		cache.deleteImage(formattedKey)
 		// imagesCacheMutex.Unlock()
 		deleteFileFromCache(formattedKey)
 		if eventChan != nil {
@@ -59,7 +59,7 @@ func getImageFromBucket(minioClient *minio.Client, objKey, formattedKey, imgType
 }
 
 func getGeonamesFileFromBucket(minioClient *minio.Client, objKey string, objDate time.Time, formattedFilename, targetImg string, eventChan chan event) error {
-	filePath := path.Join(config.CacheDir, formattedFilename)
+	filePath := filepath.Join(config.mainCacheDir, formattedFilename)
 	err := getFileFromBucket(minioClient, objKey, filePath)
 	if err != nil {
 		return err
@@ -71,7 +71,7 @@ func getGeonamesFileFromBucket(minioClient *minio.Client, objKey string, objDate
 	if err != nil {
 		return err
 	}
-	img, found := imagesCache.findImageByPrefix(targetImg)
+	img, found := mainCache.findImageByPrefix(targetImg)
 	if found {
 		img.AssociatedGeonames = &geonames
 	}
@@ -102,7 +102,7 @@ func getGeonamesFileFromBucket(minioClient *minio.Client, objKey string, objDate
 }
 
 func getFeaturesFileFromBucket(minioClient *minio.Client, objKey string, objDate time.Time, formattedFilename string, targetImg string, eventChan chan event) error {
-	filePath := path.Join(config.CacheDir, formattedFilename)
+	filePath := filepath.Join(config.mainCacheDir, formattedFilename)
 	err := getFileFromBucket(minioClient, objKey, filePath)
 	if err != nil {
 		return err
@@ -114,7 +114,7 @@ func getFeaturesFileFromBucket(minioClient *minio.Client, objKey string, objDate
 	if err != nil {
 		return err
 	}
-	img, found := imagesCache.findImageByPrefix(targetImg)
+	img, found := mainCache.findImageByPrefix(targetImg)
 	if found {
 		img.AssociatedFeatures = &features
 	}
@@ -145,7 +145,7 @@ func getFeaturesFileFromBucket(minioClient *minio.Client, objKey string, objDate
 }
 
 func deleteFileFromCache(fileName string) {
-	err := os.Remove(path.Join(config.CacheDir, fileName))
+	err := os.Remove(filepath.Join(config.mainCacheDir, fileName))
 	if err != nil && !os.IsNotExist(err) {
 		printError(fmt.Errorf("failed to delete file from cache: %v", err), false)
 	}
@@ -153,8 +153,8 @@ func deleteFileFromCache(fileName string) {
 }
 
 func existsInCache(imgName string, obj minio.ObjectInfo) (exists, needsUpdate bool) {
-	// if lastModTime, exist := imagesCache[imgName]; exist {
-	if img, found := imagesCache.findImageByKey(imgName); found {
+	// if lastModTime, exist := mainCache[imgName]; exist {
+	if img, found := mainCache.findImageByKey(imgName); found {
 		lastModTime := img.LastModified
 		if obj.LastModified.Before(lastModTime) || obj.LastModified.Equal(lastModTime) {
 			return true, false
@@ -165,6 +165,33 @@ func existsInCache(imgName string, obj minio.ObjectInfo) (exists, needsUpdate bo
 		printDebug("Found new image: ", fmt.Sprintf("%s (%.3fMB)", obj.Key, float64(obj.Size)/1e6))
 	}
 	return false, false
+}
+
+func fetchThumbnailsFrom(imgDir string, minioClient *minio.Client) []string {
+	printInfo("Fetching thumbnails from ", imgDir, " ...")
+	ctx, cancel := context.WithTimeout(context.Background(), config.PollingPeriod)
+	defer cancel()
+	thumbnails := []string{}
+	s3ImgDir := strings.ReplaceAll(imgDir, "@", "/")
+	for obj := range minioClient.ListObjects(ctx, config.S3.BucketName, minio.ListObjectsOptions{
+		Prefix:    s3ImgDir,
+		Recursive: true,
+	}) {
+		if !strings.HasSuffix(obj.Key, config.PreviewFilename) || obj.Key == s3ImgDir+config.PreviewFilename {
+			continue
+		}
+		formattedFilename := formatFileName(obj.Key)
+		if _, found := thumbnailsCache.findImageByKey(obj.Key); !found {
+			err := getImageFromBucket(thumbnailsCache, minioClient, obj.Key, formattedFilename, "", obj.LastModified, nil, false)
+			if err != nil {
+				printError(fmt.Errorf("failed to fetch thumbnail %q: %w", obj.Key, err), false)
+				continue
+			}
+			thumbnailsCache.addImage(obj.Key, obj.Size, obj.LastModified)
+		}
+		thumbnails = append(thumbnails, getThumbnailsCacheFileLink(formattedFilename))
+	}
+	return thumbnails
 }
 
 func listMetaFiles(minioClient *minio.Client, dirs map[string]string, eventChan chan event) {
@@ -193,7 +220,7 @@ func listMetaFiles(minioClient *minio.Client, dirs map[string]string, eventChan 
 								continue
 							}
 						}
-						tempFullProductLinksCache[dir] = append(tempFullProductLinksCache[dir], getCacheFileLink(strings.ReplaceAll(dir, "/", "@"), config.GeonamesFilename))
+						tempFullProductLinksCache[dir] = append(tempFullProductLinksCache[dir], getMainCacheFileLink(strings.ReplaceAll(dir, "/", "@"), config.GeonamesFilename))
 						continue
 					}
 					printDebug("Found geonames file: ", obj.Key)
@@ -203,7 +230,7 @@ func listMetaFiles(minioClient *minio.Client, dirs map[string]string, eventChan 
 						printError(err, false)
 						continue
 					}
-					tempFullProductLinksCache[dir] = append(tempFullProductLinksCache[dir], getCacheFileLink(strings.ReplaceAll(dir, "/", "@"), config.GeonamesFilename))
+					tempFullProductLinksCache[dir] = append(tempFullProductLinksCache[dir], getMainCacheFileLink(strings.ReplaceAll(dir, "/", "@"), config.GeonamesFilename))
 					continue
 				}
 
@@ -219,7 +246,7 @@ func listMetaFiles(minioClient *minio.Client, dirs map[string]string, eventChan 
 								printError(err, false)
 							}
 						}
-						tempFullProductLinksCache[dir] = append(tempFullProductLinksCache[dir], getCacheFileLink(strings.ReplaceAll(dir, "/", "@"), filename))
+						tempFullProductLinksCache[dir] = append(tempFullProductLinksCache[dir], getMainCacheFileLink(strings.ReplaceAll(dir, "/", "@"), filename))
 						continue
 					}
 					printDebug("Found features file: ", obj.Key)
@@ -228,7 +255,7 @@ func listMetaFiles(minioClient *minio.Client, dirs map[string]string, eventChan 
 						printError(err, false)
 						continue
 					}
-					tempFullProductLinksCache[dir] = append(tempFullProductLinksCache[dir], getCacheFileLink(strings.ReplaceAll(dir, "/", "@"), filename))
+					tempFullProductLinksCache[dir] = append(tempFullProductLinksCache[dir], getMainCacheFileLink(strings.ReplaceAll(dir, "/", "@"), filename))
 					continue
 				}
 
@@ -276,23 +303,23 @@ func extractFilesFromBucket(minioClient *minio.Client, eventChan chan event) err
 
 			alreadyInCache, needsUpdate := existsInCache(obj.Key, obj)
 			if alreadyInCache {
-				img, found := imagesCache.findImageByKey(obj.Key)
+				img, found := mainCache.findImageByKey(obj.Key)
 				if found && img.LastModified.Equal(obj.LastModified) {
 					continue
 				}
 			}
 
-			err := getImageFromBucket(minioClient, obj.Key, formattedName, imgType.Name, obj.LastModified, eventChan, needsUpdate)
+			err := getImageFromBucket(mainCache, minioClient, obj.Key, formattedName, imgType.Name, obj.LastModified, eventChan, needsUpdate)
 			if err != nil {
 				return err
 			}
-			// As getImageFromBucket does not add the image to the imagesCache,
+			// As getImageFromBucket does not add the image to the mainCache,
 			// we need to update it if the image was already there or add it manually if it's a new one
-			img, found := imagesCache.findImageByKey(obj.Key)
+			img, found := mainCache.findImageByKey(obj.Key)
 			if found {
 				img.LastModified = obj.LastModified
 			} else {
-				imagesCache.addImage(obj.Key, obj.Size, obj.LastModified)
+				mainCache.addImage(obj.Key, obj.Size, obj.LastModified)
 			}
 		}
 	}
@@ -339,15 +366,15 @@ func listenToBucket(minioClient *minio.Client, eventChan chan event) {
 					formattedName := formatFileName(objKey)
 					if strings.HasPrefix(e.EventName, "s3:ObjectCreated") {
 						printDebug("[Created]: ", objKey)
-						err := getImageFromBucket(minioClient, objKey, formattedName, inferImageType(objKey).Name, time.Now(), nil, false)
+						err := getImageFromBucket(mainCache, minioClient, objKey, formattedName, inferImageType(objKey).Name, time.Now(), nil, false)
 						if err != nil {
 							printError(err, false)
 							continue
 						}
 						// TODO: list full product images
 						// imagesCacheMutex.Lock()
-						// imagesCache[formattedName] = time.Now()
-						imagesCache.addImage(objKey, obj.Size, time.Now())
+						// mainCache[formattedName] = time.Now()
+						mainCache.addImage(objKey, obj.Size, time.Now())
 						// imagesCacheMutex.Unlock()
 						eventChan <- event{EventType: eventAdd, EventObj: EventObject{
 							ImgType: inferImageType(formattedName).Name,
@@ -359,8 +386,8 @@ func listenToBucket(minioClient *minio.Client, eventChan chan event) {
 						printDebug("[Removed]: ", objKey)
 						deleteFileFromCache(formattedName)
 						// imagesCacheMutex.Lock()
-						// delete(imagesCache, formattedName)
-						imagesCache.deleteImage(formattedName)
+						// delete(mainCache, formattedName)
+						mainCache.deleteImage(formattedName)
 						// imagesCacheMutex.Unlock()
 						eventChan <- event{EventType: eventRemove, EventObj: EventObject{ImgKey: formattedName}, source: "listenToBucket"}
 					}
@@ -375,7 +402,7 @@ func listenToBucket(minioClient *minio.Client, eventChan chan event) {
 					printDebug("[Created geonames]: ", objKey)
 					// formattedFilename := strings.ReplaceAll(objKey, "/", "@")
 					// img, found := getCorrespondingImage(formattedFilename)
-					img, found := imagesCache.findImageByKey(objKey)
+					img, found := mainCache.findImageByKey(objKey)
 					if !found {
 						continue
 					}
@@ -403,7 +430,7 @@ func listenToBucket(minioClient *minio.Client, eventChan chan event) {
 					printDebug("[Created full prod]: ", objKey)
 					// formattedFilename := strings.ReplaceAll(objKey, "/", "@")
 					// img, found := getCorrespondingImage(formattedFilename)
-					img, found := imagesCache.findImageByKey(objKey)
+					img, found := mainCache.findImageByKey(objKey)
 					if !found {
 						continue
 					}

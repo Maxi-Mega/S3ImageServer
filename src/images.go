@@ -13,7 +13,7 @@ type S3Image struct {
 	Size         int64
 
 	FormattedKey string
-	PathOnDisk   string
+	// PathOnDisk   string
 
 	Type               *ImageType
 	AssociatedGeonames *Geonames
@@ -21,15 +21,14 @@ type S3Image struct {
 }
 
 func newS3ImageFromCache(imagePath string, fileInfo fs.FileInfo) S3Image {
-	pathWithoutParentDir := strings.ReplaceAll(strings.TrimPrefix(imagePath, config.CacheDir), "@", "/")
-	pathWithoutParentDir = strings.TrimPrefix(pathWithoutParentDir, "/")
+	s3Path := strings.TrimPrefix(strings.ReplaceAll(imagePath, "@", "/"), "/")
 	return S3Image{
-		S3Key:              pathWithoutParentDir,
-		LastModified:       fileInfo.ModTime(),
-		Size:               fileInfo.Size(),
-		FormattedKey:       strings.ReplaceAll(pathWithoutParentDir, "/", "@"),
-		PathOnDisk:         imagePath,
-		Type:               inferImageType(pathWithoutParentDir),
+		S3Key:        s3Path,
+		LastModified: fileInfo.ModTime(),
+		Size:         fileInfo.Size(),
+		FormattedKey: strings.ReplaceAll(s3Path, "/", "@"),
+		// PathOnDisk:         imagePath,
+		Type:               inferImageType(s3Path),
 		AssociatedGeonames: nil,
 	}
 }
@@ -53,41 +52,44 @@ func (image S3Image) String() string {
 	return image.S3Key
 }
 
-type S3Images []S3Image
+type ImageCache struct {
+	pathOnDisk string
+	images     []S3Image
+}
 
-func (images S3Images) findImageByKey(key string) (image *S3Image, found bool) {
-	for i, img := range images {
+func (images ImageCache) findImageByKey(key string) (image *S3Image, found bool) {
+	for i, img := range images.images {
 		if img.S3Key == key {
-			return &images[i], true
+			return &images.images[i], true
 		}
 	}
 	return nil, false
 }
 
-func (images S3Images) findImageByPrefix(prefix string) (image *S3Image, found bool) {
-	for i, img := range images {
+func (images ImageCache) findImageByPrefix(prefix string) (image *S3Image, found bool) {
+	for i, img := range images.images {
 		if strings.HasPrefix(img.S3Key, prefix) {
-			return &images[i], true
+			return &images.images[i], true
 		}
 	}
 	return nil, false
 }
 
-func (images S3Images) toEventObjects() []EventObject {
+func (images ImageCache) toEventObjects() []EventObject {
 	imagesCacheMutex.Lock()
 	defer imagesCacheMutex.Unlock()
 
-	sort.Slice(images, func(i, j int) bool {
-		return images[i].LastModified.After(images[j].LastModified) // Usage of after to invert the sort order
+	sort.Slice(images.images, func(i, j int) bool {
+		return images.images[i].LastModified.After(images.images[j].LastModified) // Usage of after to invert the sort order
 	})
 
-	maxImagesCount := len(images)
+	maxImagesCount := len(images.images)
 	if maxImagesCount > config.MaxImagesDisplayCount {
 		maxImagesCount = config.MaxImagesDisplayCount
 	}
 
 	result := make([]EventObject, maxImagesCount)
-	for i, image := range images {
+	for i, image := range images.images {
 		if i >= maxImagesCount {
 			// convert only the maxImagesCount first images,
 			// maxImagesCount being the minimum between the number of available images and the max images display count
@@ -115,28 +117,28 @@ func (images S3Images) toEventObjects() []EventObject {
 	return result
 }
 
-func (images *S3Images) addImage(objKey string, size int64, lastModified time.Time) {
+func (images *ImageCache) addImage(objKey string, size int64, lastModified time.Time) {
 	imagesCacheMutex.Lock()
 	defer imagesCacheMutex.Unlock()
 
-	*images = append(*images, S3Image{
-		S3Key:              objKey,
-		LastModified:       lastModified,
-		Size:               size,
-		FormattedKey:       strings.ReplaceAll(objKey, "/", "@"),
-		PathOnDisk:         "",
+	(*images).images = append((*images).images, S3Image{
+		S3Key:        objKey,
+		LastModified: lastModified,
+		Size:         size,
+		FormattedKey: strings.ReplaceAll(objKey, "/", "@"),
+		// PathOnDisk:         "",
 		Type:               inferImageType(objKey),
 		AssociatedGeonames: nil,
 	})
 }
 
-func (images *S3Images) deleteImage(formattedName string) {
+func (images *ImageCache) deleteImage(formattedName string) {
 	imagesCacheMutex.Lock()
 	defer imagesCacheMutex.Unlock()
 
-	for i, img := range *images {
+	for i, img := range (*images).images {
 		if img.FormattedKey == formattedName {
-			*images = append((*images)[:i], (*images)[i+1:]...)
+			(*images).images = append((*images).images[:i], (*images).images[i+1:]...)
 			return
 		}
 	}

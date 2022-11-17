@@ -6,6 +6,8 @@
         <meta charset="utf-8">
         <style>
             :root {
+                --color-background-dark: #1c1c1c;
+
                 --color-glacier-blue: #ccd7d9;
                 --color-secondary-blue: #20abfe;
 
@@ -17,7 +19,7 @@
             body {
                 margin: 10px 10px 0;
                 padding-top: 15px;
-                background-color: #1c1c1c;
+                background-color: var(--color-background-dark);
                 /*display: flex;
                 justify-content: space-between;
                 align-items: center;
@@ -65,14 +67,14 @@
             }
 
             .filters .img-group-dropdown.selected .dropdown-title {
-                color: white;
+                color: var(--header-text-color);
             }
 
             .filters .img-group-dropdown-content {
                 display: none;
                 flex-flow: column;
                 position: absolute;
-                background-color: #393939;
+                background-color: var(--color-glacier-blue);
                 padding-top: 5px;
                 padding-left: 2px;
                 transform: translateX(-2px);
@@ -163,7 +165,7 @@
                 top: 4px;
                 left: 50%;
                 transform: translateX(-50%);
-                background-color: #1c1c1c;
+                background-color: var(--color-background-dark);
                 line-height: 1.7;
                 font-weight: bold;
                 font-size: 14px;
@@ -176,7 +178,7 @@
                 display: none;
             }
 
-            img:not(#modal-img) {
+            .features-container > img {
                 max-width: 22vw;
                 cursor: pointer;
                 /*animation: fadein ease-out 1s;*/
@@ -188,6 +190,7 @@
                 font-family: Arial, sans-serif;
                 font-size: 10px;
                 text-decoration: none;
+                text-align: center;
             }
 
             .img-title:hover {
@@ -211,6 +214,7 @@
             #modal-content {
                 min-width: 95%;
                 max-width: 95%;
+                max-height: 90%;
                 margin-top: 50px;
                 padding: 10px;
                 display: flex;
@@ -299,10 +303,10 @@
             }
 
             #modal #content {
-                width: 95%;
+                width: 99.3%;
                 display: flex;
                 flex-flow: row nowrap;
-                align-items: center;
+                align-items: flex-start;
                 justify-content: space-around;
             }
 
@@ -330,8 +334,16 @@
                 align-self: baseline;
             }
 
+            #modal #content #content-details #details-top {
+                display: flex;
+                flex-flow: row nowrap;
+            }
+
             #modal #content-details #modal-links {
+                max-width: 87%;
+                min-width: 87%;
                 height: 5em;
+                margin-right: 10px;
                 margin-bottom: 10px;
                 padding: 5px 10px;
                 border: 2px solid var(--color-secondary-blue);
@@ -349,8 +361,34 @@
                 color: black;
             }
 
-            #modal #content-details #modal-thumbnails {
+            #modal #content #content-details #details-top #thumbnails-control {
+                max-width: 9%;
+                display: flex;
+                justify-content: center;
+                align-items: flex-end;
+            }
 
+            #modal #content #thumbnails-control #thumbnails-scaler {
+                max-width: 100%;
+                margin-bottom: 10px;
+            }
+
+            #modal #content-details #modal-thumbnails {
+                max-height: 70vh;
+                border: 2px solid var(--color-secondary-blue);
+                background-color: var(--color-background-dark);
+                display: flex;
+                flex-flow: row wrap;
+                justify-content: space-evenly;
+                overflow-y: auto;
+            }
+
+            #modal #modal-thumbnails .thumbnail-container {
+                margin: 5px;
+                display: flex;
+                flex-flow: column nowrap;
+                justify-content: flex-start;
+                align-items: center;
             }
 
             .no-copy {
@@ -445,7 +483,12 @@
                     <img id="modal-img" src="" alt=""/>
                 </div>
                 <div id="content-details">
-                    <div id="modal-links"></div>
+                    <div id="details-top">
+                        <div id="modal-links"></div>
+                        <div id="thumbnails-control">
+                            <input id="thumbnails-scaler" type="range" min="10" max="22" step="1">
+                        </div>
+                    </div>
                     <div id="modal-thumbnails"></div>
                 </div>
             </div>
@@ -454,20 +497,16 @@
     <script>
         let currentImgWidth, currentFontSize;
 
+        const thumbnailScalerProps = {
+            baseScale: 30,
+            imgSelector: "#modal-thumbnails .thumbnail-container, #modal-thumbnails .thumbnail-container img",
+            titleSelector: "#modal-thumbnails .thumbnail-container a.img-title"
+        };
+
         function countImages() {
             const visible = document.querySelectorAll("div.img-container:not(.filter-hidden):not(.search-hidden)").length;
             const total = document.querySelectorAll("div.img-container").length;
             document.getElementById("img-count").innerText = `(${visible} / ${total})`;
-        }
-
-        function updateScale() {
-            const scaler = document.getElementById("scaler");
-            const imgWidth = (40 - scaler.value) + "vw";
-            currentImgWidth = imgWidth;
-            document.querySelectorAll("img:not(#modal-img)").forEach(img => img.style.maxWidth = imgWidth);
-            const fontSize = Math.round(14 - scaler.value / 10) + "px";
-            currentFontSize = fontSize;
-            document.querySelectorAll("a.img-title").forEach(title => title.style.fontSize = fontSize);
         }
 
         function switchToImage(relativeIndex) {
@@ -491,6 +530,32 @@
                     return;
                 }
             }
+        }
+
+        function updateScale(scaler, baseScale, imgSelector, titleSelector) {
+            const imgWidth = (baseScale - scaler.value) + "vw";
+            currentImgWidth = imgWidth;
+            document.querySelectorAll(imgSelector).forEach(img => {
+                img.style.maxWidth = imgWidth;
+                img.style.minWidth = imgWidth;
+            });
+            const fontSize = Math.round(14 - scaler.value / 10) + "px";
+            currentFontSize = fontSize;
+            document.querySelectorAll(titleSelector).forEach(title => title.style.fontSize = fontSize);
+        }
+
+        function initScaler(scaler, container, scalerInitialPercentage, baseScale, imgSelector, fontSelector) {
+            const scalerMinValue = Number(scaler.min);
+            const scalerMaxValue = Number(scaler.max);
+            const scalerInitialValue = scalerMinValue + ((scalerMaxValue - scalerMinValue) * scalerInitialPercentage / 100.0);
+            currentImgWidth = scalerInitialValue;
+            currentFontSize = "10px";
+            scaler.value = scalerInitialValue;
+            scaler.addEventListener("input", () => updateScale(scaler, baseScale, imgSelector, fontSelector));
+            container.addEventListener("auxclick", () => {
+                scaler.value = scalerInitialValue;
+                updateScale(scaler, baseScale, imgSelector, fontSelector);
+            });
         }
 
         document.addEventListener("DOMContentLoaded", () => {
@@ -527,21 +592,8 @@
             countImages();
 
             const scaler = document.getElementById("scaler");
-            const scalerMinValue = 10;
-            const scalerMaxValue = 30;
-            const scalerInitialPercentage = {{.ScaleInitialPercentage}};
-            const scalerInitialValue = scalerMinValue + ((scalerMaxValue - scalerMinValue) * scalerInitialPercentage / 100.0);
-            currentImgWidth = scalerInitialValue;
-            currentFontSize = "10px";
-            console.log("scalerInitialPercentage:", scalerInitialPercentage, "/ scalerInitialValue:", scalerInitialValue);
-            scaler.value = scalerInitialValue;
-            scaler.addEventListener("input", updateScale);
-            document.getElementById("scaler-container").addEventListener("auxclick", () => {
-                scaler.value = scalerInitialValue;
-                updateScale();
-            });
-
-            updateScale();
+            initScaler(scaler, document.getElementById("scaler-container"), {{- .ScaleInitialPercentage -}}, 40, "img:not(#modal-img)", "a.img-title");
+            updateScale(scaler, 40, "img:not(#modal-img)", "a.img-title");
 
             document.querySelector("#modal #modal-header .previous-next-image-container").addEventListener("click", (ev) => {
                 // Prevent previous/next misclick
@@ -556,6 +608,10 @@
                 ev.stopImmediatePropagation();
                 switchToImage(1);
             });
+
+            const thumbnailsScaler = document.getElementById("thumbnails-scaler");
+            initScaler(thumbnailsScaler, thumbnailsScaler, {{- .ScaleInitialPercentage -}},
+                thumbnailScalerProps.baseScale, thumbnailScalerProps.imgSelector, thumbnailScalerProps.titleSelector);
         });
     </script>
 {{end}}

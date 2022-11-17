@@ -2,13 +2,12 @@ package main
 
 import (
 	"fmt"
+	"github.com/minio/minio-go/v7"
 	"html/template"
 	"io"
 	"net/http"
 	"os"
-	"path"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -32,7 +31,7 @@ type templateData struct {
 	PollingPeriod          float64
 }
 
-func startWebServer(port uint16) error {
+/*func startWebServer(port uint16) error {
 	http.HandleFunc("/", indexHandler)
 	http.HandleFunc("/image/", imageHandler)
 	http.HandleFunc("/images", imagesListHandler)
@@ -44,7 +43,7 @@ func startWebServer(port uint16) error {
 
 	printInfo("Starting web server on port ", port, " ...")
 	return http.ListenAndServe(":"+strconv.FormatUint(uint64(port), 10), nil)
-}
+}*/
 
 func executeTemplate(w http.ResponseWriter, tmpl *template.Template, data interface{}) {
 	w.WriteHeader(http.StatusOK)
@@ -55,7 +54,7 @@ func executeTemplate(w http.ResponseWriter, tmpl *template.Template, data interf
 	}
 }
 
-func indexHandler(w http.ResponseWriter, r *http.Request) {
+/*func indexHandler(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/" {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		http.NotFound(w, r)
@@ -74,8 +73,8 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		ScaleInitialPercentage: config.ScaleInitialPercentage,
 		BucketName:             config.S3.BucketName,
 		PrefixName:             "config.S3.KeyPrefix",
-		Previews:               imagesCache.toEventObjects(),
-		// PreviewsWithTime:       imagesCache, TODO: add time to EventObject ?
+		Previews:               mainCache.toEventObjects(),
+		// PreviewsWithTime:       mainCache, TODO: add time to EventObject ?
 		PreviewFilename:       config.PreviewFilename,
 		FullProductExtension:  config.FullProductExtension,
 		KeyPrefix:             "config.S3.KeyPrefix",
@@ -85,11 +84,11 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		RetentionPeriod:       config.RetentionPeriod.Seconds(),
 		PollingPeriod:         config.PollingPeriod.Seconds(),
 	})
-}
+}*/
 
 func imageHandler(w http.ResponseWriter, r *http.Request) {
 	imgName := strings.TrimPrefix(r.URL.Path, "/image/")
-	file, err := os.Open(path.Join(config.CacheDir, imgName))
+	/*file, err := os.Open(path.Join(config.mainCacheDir, imgName))
 	if err != nil {
 		if os.IsNotExist(err) {
 			prettier(w, "This image does not exist !", nil, http.StatusBadRequest)
@@ -104,16 +103,17 @@ func imageHandler(w http.ResponseWriter, r *http.Request) {
 	_, err = io.Copy(w, file)
 	if err != nil {
 		prettier(w, "Failed to send image: "+err.Error(), nil, http.StatusInternalServerError)
-	}
+	}*/
+	serveFile(w, filepath.Join(config.mainCacheDir, imgName))
 }
 
 func imagesListHandler(w http.ResponseWriter, r *http.Request) {
-	prettier(w, "Images list", imagesCache, http.StatusOK)
+	prettier(w, "Images list", mainCache.images, http.StatusOK)
 }
 
-func infosHandler(w http.ResponseWriter, r *http.Request) {
+func infosHandler(w http.ResponseWriter, r *http.Request, minioClient *minio.Client) {
 	imgName := strings.TrimPrefix(r.URL.Path, "/infos/")
-	img, found := imagesCache.findImageByKey(strings.ReplaceAll(imgName, "@", "/"))
+	img, found := mainCache.findImageByKey(strings.ReplaceAll(imgName, "@", "/"))
 	var strDate string
 	if found {
 		strDate = img.LastModified.Format("2006-01-02 15:04:05")
@@ -135,11 +135,13 @@ func infosHandler(w http.ResponseWriter, r *http.Request) {
 	if features == nil {
 		features = &Features{}
 	}
+	thumbnails := fetchThumbnailsFrom(imgDir, minioClient)
 	prettier(w, "Image infos", ImageInfos{
-		Date:     strDate,
-		Links:    links,
-		Geonames: geonames.format(),
-		Features: *features,
+		Date:       strDate,
+		Links:      links,
+		Geonames:   geonames.format(),
+		Features:   *features,
+		Thumbnails: thumbnails,
 	}, http.StatusOK)
 }
 
@@ -154,7 +156,7 @@ func cacheHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	imgName := parts[0]
 	imgNameWithSlashes := strings.ReplaceAll(imgName, "@", "/")
-	_, found := imagesCache.findImageByKey(imgNameWithSlashes + "/" + config.PreviewFilename)
+	_, found := mainCache.findImageByKey(imgNameWithSlashes + "/" + config.PreviewFilename)
 	if !found {
 		prettier(w, "Image not found !", nil, http.StatusNotFound)
 		return
@@ -165,18 +167,27 @@ func cacheHandler(w http.ResponseWriter, r *http.Request) {
 		prettier(w, "Image not found !", nil, http.StatusNotFound)
 		return
 	}
-	/*found = false
-	for _, file := range files {
-		if file == filename {
-			found = true
-			break
-		}
-	}
-	if !found {
-		prettier(w, "Image not found !", nil, http.StatusNotFound)
+	serveFile(w, filepath.Join(config.mainCacheDir, imgName+"@"+filename))
+}
+
+func thumbnailsHandler(w http.ResponseWriter, r *http.Request) {
+	wanted := strings.TrimPrefix(r.URL.Path, "/thumbnails/")
+	if wanted == "" {
+		prettier(w, "Invalid URL", nil, http.StatusBadRequest)
 		return
-	}*/
-	file, err := os.Open(filepath.Join(config.CacheDir, imgName+"@"+filename))
+	}
+
+	_, found := thumbnailsCache.findImageByKey(strings.ReplaceAll(wanted, "@", "/"))
+	if !found {
+		prettier(w, "Thumbnail not found !", nil, http.StatusNotFound)
+		return
+	}
+
+	serveFile(w, filepath.Join(config.thumbnailsCacheDir, wanted))
+}
+
+func serveFile(w http.ResponseWriter, filePath string) {
+	file, err := os.Open(filePath)
 	if err != nil {
 		prettier(w, "Failed to open file: "+err.Error(), nil, http.StatusInternalServerError)
 		return
@@ -185,9 +196,10 @@ func cacheHandler(w http.ResponseWriter, r *http.Request) {
 	contentType, err := getFileContentType(file)
 	if err != nil {
 		prettier(w, "Failed to detect file content-type: "+err.Error(), nil, http.StatusInternalServerError)
-	} else {
-		w.Header().Set("Content-Type", contentType)
+		return
 	}
+	w.Header().Set("Content-Type", contentType)
+	w.WriteHeader(http.StatusOK)
 	_, err = io.Copy(w, file)
 	if err != nil {
 		prettier(w, "Failed to read file: "+err.Error(), nil, http.StatusInternalServerError)

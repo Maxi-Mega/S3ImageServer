@@ -6,12 +6,17 @@ import (
 	"fmt"
 	"gopkg.in/yaml.v3"
 	"os"
-	"path"
+	"path/filepath"
 	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
+)
+
+const (
+	mainCacheDirName       = "main"
+	thumbnailsCacheDirName = "thumbnails"
 )
 
 //go:embed resources/example_config.yml
@@ -65,7 +70,9 @@ type Config struct {
 	HttpTrace     bool                   `yaml:"httpTrace"`
 	ExitOnS3Error bool                   `yaml:"exitOnS3Error"`
 
-	CacheDir              string        `yaml:"cacheDir"`
+	BaseCacheDir          string `yaml:"cacheDir"`
+	mainCacheDir          string
+	thumbnailsCacheDir    string
 	RetentionPeriod       time.Duration `yaml:"retentionPeriod"`
 	MaxImagesDisplayCount int           `yaml:"maxImagesDisplayCount"`
 	PollingMode           bool          `yaml:"pollingMode"`
@@ -87,7 +94,7 @@ var defaultConfig = Config{
 	JsonLogFields: map[string]interface{}{},
 	HttpTrace:     false,
 	ExitOnS3Error: false,
-	CacheDir:      path.Join(os.TempDir(), defaultTempDirName),
+	BaseCacheDir:  filepath.Join(os.TempDir(), defaultTempDirName),
 	PollingMode:   false,
 	PollingPeriod: 10 * time.Second,
 	WebServerPort: 9999,
@@ -121,9 +128,9 @@ func (config *Config) loadDefaults() {
 			if fieldValue.(map[string]interface{}) == nil {
 				config.JsonLogFields = defaultConfig.JsonLogFields
 			}
-		case "CacheDir":
+		case "BaseCacheDir":
 			if fieldValue.(string) == "" {
-				config.CacheDir = defaultConfig.CacheDir
+				config.BaseCacheDir = defaultConfig.BaseCacheDir
 			}
 		case "WebServerPort":
 			if fieldValue.(uint16) == 0 {
@@ -242,6 +249,10 @@ func loadConfigFromFile(filePath string) (Config, error) {
 			cfg.imageTypes = append(cfg.imageTypes, imgType)
 		}
 	}
+
+	cfg.mainCacheDir = filepath.Join(cfg.BaseCacheDir, mainCacheDirName)
+	cfg.thumbnailsCacheDir = filepath.Join(cfg.BaseCacheDir, thumbnailsCacheDirName)
+
 	return cfg, nil
 }
 
@@ -262,7 +273,7 @@ func (config *Config) String() string {
 	result += "fullProductSignedUrl: " + strconv.FormatBool(config.FullProductSignedUrl) + "\n"
 	result += "imageGroups: " + joinStructs(config.ImageGroups, ", ", false) + "\n"
 	result += fmt.Sprintf("logLevel: %s\ncolorLogs: %v\njsonLogFormat: %v\njsonLogFields: %v\nhttpTrace: %v\nexitOnS3Error: %v\n", config.LogLevel, config.ColorLogs, config.JsonLogFormat, config.JsonLogFields, config.HttpTrace, config.ExitOnS3Error)
-	result += fmt.Sprintf("cacheDir: %s\nretentionPeriod: %v\nmaxImagesDisplayCount: %d\npollingMode: %v\npollingPeriod: %v\nwebServerPort: %d\n", config.CacheDir, config.RetentionPeriod, config.MaxImagesDisplayCount, config.PollingMode, config.PollingPeriod, config.WebServerPort)
+	result += fmt.Sprintf("cacheDir: %s\nretentionPeriod: %v\nmaxImagesDisplayCount: %d\npollingMode: %v\npollingPeriod: %v\nwebServerPort: %d\n", config.mainCacheDir, config.RetentionPeriod, config.MaxImagesDisplayCount, config.PollingMode, config.PollingPeriod, config.WebServerPort)
 	return result
 }
 

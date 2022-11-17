@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/gorilla/websocket"
+	"github.com/minio/minio-go/v7"
 	"net/http"
 	"strconv"
 	"time"
@@ -163,8 +164,8 @@ func websocketHandler(w http.ResponseWriter, r *http.Request) {
 		ScaleInitialPercentage: config.ScaleInitialPercentage,
 		BucketName:             config.S3.BucketName,
 		PrefixName:             "config.S3.KeyPrefix",
-		Previews:               imagesCache.toEventObjects(),
-		// PreviewsWithTime:       imagesCache, TODO: add time to EventObject ?
+		Previews:               mainCache.toEventObjects(),
+		// PreviewsWithTime:       mainCache, TODO: add time to EventObject ?
 		PreviewFilename:       config.PreviewFilename,
 		FullProductExtension:  config.FullProductExtension,
 		KeyPrefix:             "config.S3.KeyPrefix",
@@ -176,7 +177,7 @@ func websocketHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func reloadHandler(w http.ResponseWriter, r *http.Request, eventChan chan event) {
+func reloadHandler(w http.ResponseWriter, _ *http.Request, eventChan chan event) {
 	printInfo("Reload ...")
 	pollMutex.Lock()
 	defer pollMutex.Unlock()
@@ -189,8 +190,8 @@ func reloadHandler(w http.ResponseWriter, r *http.Request, eventChan chan event)
 	fullProductLinksCacheMutex.Lock()
 	defer fullProductLinksCacheMutex.Unlock()
 
-	// delete all cache in the filesystem
-	err := clearDir(config.CacheDir)
+	// delete all caches in the filesystem
+	err := clearDir(config.BaseCacheDir)
 	if err != nil {
 		printError(fmt.Errorf("failed to clear the cache on disk: %v", err), false)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -199,7 +200,8 @@ func reloadHandler(w http.ResponseWriter, r *http.Request, eventChan chan event)
 	}
 
 	// clear all caches in ram
-	imagesCache = S3Images{}
+	mainCache = ImageCache{pathOnDisk: config.mainCacheDir}
+	thumbnailsCache = ImageCache{pathOnDisk: config.thumbnailsCacheDir}
 	for timerKey, timer := range timers {
 		timer.Stop()
 		delete(timers, timerKey)
@@ -218,7 +220,7 @@ func reloadHandler(w http.ResponseWriter, r *http.Request, eventChan chan event)
 	fmt.Fprintln(w, "Reload done !")
 }
 
-func startWSServer(port uint16, eventChan chan event) error {
+func startWSServer(port uint16, eventChan chan event, minioClient *minio.Client) error {
 	hub := newHub()
 	go hub.run(eventChan)
 
@@ -228,8 +230,11 @@ func startWSServer(port uint16, eventChan chan event) error {
 	})
 	http.HandleFunc("/image/", imageHandler)
 	http.HandleFunc("/images", imagesListHandler)
-	http.HandleFunc("/infos/", infosHandler)
+	http.HandleFunc("/infos/", func(w http.ResponseWriter, r *http.Request) {
+		infosHandler(w, r, minioClient)
+	})
 	http.HandleFunc("/cache/", cacheHandler)
+	http.HandleFunc("/thumbnails/", thumbnailsHandler)
 	http.HandleFunc("/reload", func(w http.ResponseWriter, r *http.Request) {
 		reloadHandler(w, r, eventChan)
 	})

@@ -39,7 +39,7 @@ func formatFileName(imgPath string) string {
 	images := []EventObject{}
 
 imagesCacheLoop:
-	for imgToDo, dateToDo := range imagesCache {
+	for imgToDo, dateToDo := range mainCache {
 		imgToDoObj := EventObject{
 			ImgType: getImageType(imgToDo),
 			ImgKey:  imgToDo,
@@ -47,7 +47,7 @@ imagesCacheLoop:
 		}
 
 		for i, imgDone := range images {
-			if dateToDo.After(imagesCache[imgDone.ImgKey]) {
+			if dateToDo.After(mainCache[imgDone.ImgKey]) {
 				images = append(images[:i], append([]EventObject{imgToDoObj}, images[i:]...)...) // insert new img at the right position
 				continue imagesCacheLoop
 			}
@@ -65,9 +65,9 @@ imagesCacheLoop:
 }*/
 
 // func generateImagesCache() map[string]time.Time {
-func generateImagesCache() S3Images {
-	cache := S3Images{}
-	err := filepath.WalkDir(config.CacheDir, func(imagePath string, file fs.DirEntry, err error) error {
+func generateImagesCache(pathOnDisk string) ImageCache {
+	cache := ImageCache{pathOnDisk: pathOnDisk}
+	err := filepath.WalkDir(pathOnDisk, func(imagePath string, file fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -84,8 +84,8 @@ func generateImagesCache() S3Images {
 		}
 		if strings.HasSuffix(imagePath, config.PreviewFilename) {
 			// images = append(images, getJustFileName(imagePath))
-			// cache[formatFileName(strings.TrimPrefix(strings.TrimPrefix(imagePath, config.CacheDir), string(os.PathSeparator)))] = info.ModTime()
-			cache = append(cache, newS3ImageFromCache(imagePath, info))
+			// cache[formatFileName(strings.TrimPrefix(strings.TrimPrefix(imagePath, config.mainCacheDir), string(os.PathSeparator)))] = info.ModTime()
+			cache.images = append(cache.images, newS3ImageFromCache(strings.TrimPrefix(imagePath, pathOnDisk), info))
 		}
 		return nil
 	})
@@ -96,7 +96,7 @@ func generateImagesCache() S3Images {
 }
 
 /*func getCorrespondingImage(objKey string) (image string, found bool) {
-	for img := range imagesCache {
+	for img := range mainCache {
 		lastSlash := strings.LastIndex(img, "@")
 		if lastSlash < 0 {
 			continue
@@ -109,8 +109,12 @@ func generateImagesCache() S3Images {
 	return "", false
 }*/
 
-func getCacheFileLink(img, file string) string {
+func getMainCacheFileLink(img, file string) string {
 	return config.BasePath + "/cache/" + img + "/" + file
+}
+
+func getThumbnailsCacheFileLink(img string) string {
+	return config.BasePath + "/thumbnails/" + img
 }
 
 func getFullProductImageLink(minioClient *minio.Client, objKey string) string {
@@ -127,10 +131,11 @@ func getFullProductImageLink(minioClient *minio.Client, objKey string) string {
 }
 
 type ImageInfos struct {
-	Date     string   `json:"date"`
-	Links    []string `json:"links"`
-	Geonames string   `json:"geonames"`
-	Features Features `json:"features"`
+	Date       string   `json:"date"`
+	Links      []string `json:"links"`
+	Geonames   string   `json:"geonames"`
+	Features   Features `json:"features"`
+	Thumbnails []string `json:"thumbnails"`
 }
 
 func prettier(w http.ResponseWriter, message string, data interface{}, status int) {
@@ -192,6 +197,8 @@ func getFileContentType(file *os.File) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to read file: %v", err)
 	}
+	// Reseting the offset that has been shifted by the Read method
+	_, _ = file.Seek(0, 0)
 
 	// Use the net/http package's handy DectectContentType function. Always returns a valid
 	// content-type by returning "application/octet-stream" if no others seemed to match.
@@ -210,6 +217,17 @@ func clearDir(dir string) error {
 		}
 	}
 	return nil
+}
+
+func createCache(cachePath string) ImageCache {
+	if _, err := os.Stat(cachePath); os.IsNotExist(err) {
+		err = os.MkdirAll(cachePath, 0750)
+		if err != nil {
+			exitWithError(err)
+		}
+		return ImageCache{pathOnDisk: cachePath}
+	}
+	return generateImagesCache(cachePath)
 }
 
 func minInt(a, b int) int {
