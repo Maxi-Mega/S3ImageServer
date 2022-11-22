@@ -1,4 +1,4 @@
-# S3ImageServer [V3.0.0-SNAPSHOT]
+# S3ImageServer [V3.0.0]
 
 ### Browse images from S3 bucket
 

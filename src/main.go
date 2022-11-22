@@ -4,14 +4,15 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/minio/minio-go/v7"
-	"github.com/minio/minio-go/v7/pkg/credentials"
 	"os"
 	"sync"
 	"time"
+
+	"github.com/minio/minio-go/v7"
+	"github.com/minio/minio-go/v7/pkg/credentials"
 )
 
-var version = "3.0.0-SNAPSHOT-dev"
+var version = "3.0.0-dev"
 
 const defaultTempDirName = "s3_image_server"
 

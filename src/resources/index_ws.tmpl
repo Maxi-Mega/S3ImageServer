@@ -58,6 +58,12 @@
     }
 
     function modalize(img) {
+        while (modalLinks.hasChildNodes()) {
+            modalLinks.removeChild(modalLinks.firstChild);
+        }
+        while (thumbnails.hasChildNodes()) {
+            thumbnails.removeChild(thumbnails.firstChild);
+        }
         fetch("{{.BasePath}}/infos/" + img.alt).then(response => { // .replaceAll("@", "/")
             response.json().then(jsonData => {
                 jsonData = jsonData.data;
@@ -78,9 +84,6 @@
                 } else {
                     document.getElementById("geonames").innerHTML = "";
                 }
-                while (modalLinks.hasChildNodes()) {
-                    modalLinks.removeChild(modalLinks.firstChild);
-                }
                 for (const link of jsonData["links"]) {
                     const li = document.createElement("li");
                     const a = document.createElement("a");
@@ -97,19 +100,20 @@
                     li.appendChild(a);
                     modalLinks.appendChild(li);
                 }
-                while (thumbnails.hasChildNodes()) {
-                    thumbnails.removeChild(thumbnails.firstChild);
-                }
+                const thumbnailsCount = document.getElementById("thumbnails-count");
                 const scaler = document.getElementById("thumbnails-scaler");
                 if (jsonData["thumbnails"].length > 0) {
+                    thumbnailsCount.style.display = "block";
+                    thumbnailsCount.innerHTML = "Count:&nbsp;&nbsp;<strong>" + jsonData["thumbnails"].length + "</strong>";
                     scaler.style.display = "block";
                     thumbnails.style.display = "flex";
                     for (const thumbnail of jsonData["thumbnails"]) {
                         thumbnails.appendChild(createThumbnail(thumbnail));
                     }
-                    updateScale(scaler, thumbnailScalerProps.baseScale,
-                        thumbnailScalerProps.imgSelector, thumbnailScalerProps.titleSelector);
+                    thumbnailsScaler.updateScale();
                 } else {
+                    thumbnailsCount.style.display = "none";
+                    thumbnailsCount.innerHTML = "";
                     scaler.style.display = "none";
                     thumbnails.style.display = "none";
                 }
@@ -122,6 +126,7 @@
         modalImg.classList.add("show");
         modalImg.src = img.src;
         modalImg.alt = img.alt;
+        modalImg.parentElement.href = img.src;
         const parentDiv = img.parentElement.parentElement;
         let imgName = formatTitle(parentDiv.getAttribute("img-name"));
         /*if (imageTypes.map(imgType => imgType.name).includes(imgName.substring(0, imgName.indexOf("\n")))) {
@@ -142,7 +147,8 @@
         if (previewParts.length >= 2) {
             newImg.title = previewParts[previewParts.length - 2];
         }
-        newImg.style.maxWidth = currentImgWidth;
+        newImg.style.maxWidth = globalScaler.currentImgWidth;
+        newImg.style.minWidth = globalScaler.currentImgWidth;
         newImg.addEventListener("click", () => modalize(newImg));
         const newPre = document.createElement("pre");
         newPre.classList.add("image-features");
@@ -151,7 +157,7 @@
         newA.href = "{{.BasePath}}/image/" + imgKey;
         newA.target = "_blank";
         newA.title = "Click to open the image in a new tab";
-        newA.style.fontSize = currentFontSize;
+        newA.style.fontSize = globalScaler.currentFontSize;
         newA.innerHTML = formatTitle(img["img_name"]).replace(/_/g, "_<wbr />");
         const featuresContainer = document.createElement("div");
         featuresContainer.classList.add("features-container");
@@ -274,13 +280,13 @@
             }
         });
 
-        modal.addEventListener("click", ev => {
+        /*modal.addEventListener("click", ev => {
             if (ev.target.localName === "a" || ev.target.localName === "input") {
                 // Don't close modal when clicking on a link or an input
                 return;
             }
             closeModal();
-        });
+        });*/
 
         document.querySelectorAll(".filters .img-group-dropdown-content input[type=checkbox]").forEach(inpt => {
             inpt.checked = true;

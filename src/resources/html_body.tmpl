@@ -38,6 +38,7 @@
                 background-color: var(--header-background-color);
                 justify-content: space-between;
                 z-index: 10;
+                font-size: 15px;
             }
 
             .filters {
@@ -51,7 +52,6 @@
                 margin-left: 30px;
                 /*color: #e4d3c1;*/
                 color: var(--header-text-color);
-                font-size: 14px;
                 -webkit-user-select: none; /* Chrome all / Safari all */
                 -moz-user-select: none; /* Firefox all */
                 -ms-user-select: none; /* IE 10+ */
@@ -92,7 +92,6 @@
             header label {
                 /*color: #e4d3c1;*/
                 color: var(--header-text-color);
-                font-size: 14px;
             }
 
             #header-right {
@@ -214,14 +213,16 @@
             #modal-content {
                 min-width: 95%;
                 max-width: 95%;
+                min-height: 90%;
                 max-height: 90%;
                 margin-top: 50px;
                 padding: 10px;
                 display: flex;
                 flex-flow: column nowrap;
                 align-items: center;
-                justify-content: space-between;
+                justify-content: flex-start;
                 background-color: var(--color-glacier-blue);
+                font-size: 14px;
             }
 
             #modal-header {
@@ -267,9 +268,9 @@
                 width: 30%;
                 height: 40px;
                 margin: 0;
-                font-size: 1rem;
+                font-size: 14px;
                 overflow-y: auto;
-                line-height: 2.6;
+                line-height: 3.1;
                 border: 2px solid var(--color-secondary-blue);
                 background-color: white;
             }
@@ -342,7 +343,7 @@
             #modal #content-details #modal-links {
                 max-width: 87%;
                 min-width: 87%;
-                height: 5em;
+                height: 6em;
                 margin-right: 10px;
                 margin-bottom: 10px;
                 padding: 5px 10px;
@@ -364,13 +365,18 @@
             #modal #content #content-details #details-top #thumbnails-control {
                 max-width: 9%;
                 display: flex;
-                justify-content: center;
-                align-items: flex-end;
+                flex-flow: column;
+                justify-content: flex-end;
+                align-items: start;
             }
 
             #modal #content #thumbnails-control #thumbnails-scaler {
                 max-width: 100%;
                 margin-bottom: 10px;
+            }
+
+            #modal #content #thumbnails-control #thumbnails-count {
+                margin: 0 0 5px 2px;
             }
 
             #modal #content-details #modal-thumbnails {
@@ -389,6 +395,15 @@
                 flex-flow: column nowrap;
                 justify-content: flex-start;
                 align-items: center;
+            }
+
+            #modal #modal-close {
+                position: absolute;
+                top: 47px;
+                right: 2.1vw;
+                color: black;
+                font-size: 25px;
+                cursor: pointer;
             }
 
             .no-copy {
@@ -461,7 +476,7 @@
             </div>
         {{end}}
     </div>
-    <div id="modal" title="Click to close">
+    <div id="modal">
         <div id="modal-content">
             <div id="modal-header">
                 <div id="details">
@@ -480,22 +495,26 @@
             </div>
             <div id="content">
                 <div id="img-container">
-                    <img id="modal-img" src="" alt=""/>
+                    <a id="modal-img-link" href="" target="_blank">
+                        <img id="modal-img" src="" alt=""/>
+                    </a>
                 </div>
                 <div id="content-details">
                     <div id="details-top">
                         <div id="modal-links"></div>
                         <div id="thumbnails-control">
+                            <p id="thumbnails-count"></p>
                             <input id="thumbnails-scaler" type="range" min="10" max="22" step="1">
                         </div>
                     </div>
                     <div id="modal-thumbnails"></div>
                 </div>
             </div>
+            <span id="modal-close" title="Click to close">&times;</span>
         </div>
     </div>
     <script>
-        let currentImgWidth, currentFontSize;
+        let globalScaler, thumbnailsScaler;
 
         const thumbnailScalerProps = {
             baseScale: 30,
@@ -532,31 +551,40 @@
             }
         }
 
+        /*function evalScaler(baseScale, value) {
+            return [
+                (baseScale - value) + "vw",
+                Math.round(14 - value / 10) + "px"
+            ];
+        }
+
         function updateScale(scaler, baseScale, imgSelector, titleSelector) {
-            const imgWidth = (baseScale - scaler.value) + "vw";
-            currentImgWidth = imgWidth;
+            [currentImgWidth, currentFontSize] = evalScaler(baseScale, scaler.value);
+            console.info("updateScale:", currentImgWidth);
             document.querySelectorAll(imgSelector).forEach(img => {
-                img.style.maxWidth = imgWidth;
-                img.style.minWidth = imgWidth;
+                img.style.maxWidth = currentImgWidth;
+                img.style.minWidth = currentImgWidth;
             });
-            const fontSize = Math.round(14 - scaler.value / 10) + "px";
-            currentFontSize = fontSize;
-            document.querySelectorAll(titleSelector).forEach(title => title.style.fontSize = fontSize);
+            /!*const fontSize = Math.round(14 - scaler.value / 10) + "px";
+            currentFontSize = fontSize;*!/
+            document.querySelectorAll(titleSelector).forEach(title => title.style.fontSize = currentFontSize);
         }
 
         function initScaler(scaler, container, scalerInitialPercentage, baseScale, imgSelector, fontSelector) {
             const scalerMinValue = Number(scaler.min);
             const scalerMaxValue = Number(scaler.max);
             const scalerInitialValue = scalerMinValue + ((scalerMaxValue - scalerMinValue) * scalerInitialPercentage / 100.0);
-            currentImgWidth = scalerInitialValue;
-            currentFontSize = "10px";
             scaler.value = scalerInitialValue;
+            [currentImgWidth, currentFontSize] = evalScaler(baseScale, scaler.value);
+            // currentImgWidth = scaler.value + "vw";
+            console.info("initScaler:", currentImgWidth)
+            // currentFontSize = "10px";
             scaler.addEventListener("input", () => updateScale(scaler, baseScale, imgSelector, fontSelector));
             container.addEventListener("auxclick", () => {
                 scaler.value = scalerInitialValue;
                 updateScale(scaler, baseScale, imgSelector, fontSelector);
             });
-        }
+        }*/
 
         document.addEventListener("DOMContentLoaded", () => {
 
@@ -591,9 +619,15 @@
 
             countImages();
 
-            const scaler = document.getElementById("scaler");
-            initScaler(scaler, document.getElementById("scaler-container"), {{- .ScaleInitialPercentage -}}, 40, "img:not(#modal-img)", "a.img-title");
-            updateScale(scaler, 40, "img:not(#modal-img)", "a.img-title");
+            globalScaler = new Scaler(document.getElementById("scaler"), document.getElementById("scaler-container"), {{- .ScaleInitialPercentage -}}, 40, "img:not(#modal-img)", "a.img-title");
+            globalScaler.updateScale();
+
+            document.getElementById("modal-close").addEventListener("click", () => closeModal());
+            modal.addEventListener("click", ev => {
+                if (ev.target === modal) {
+                    closeModal();
+                }
+            });
 
             document.querySelector("#modal #modal-header .previous-next-image-container").addEventListener("click", (ev) => {
                 // Prevent previous/next misclick
@@ -609,9 +643,52 @@
                 switchToImage(1);
             });
 
-            const thumbnailsScaler = document.getElementById("thumbnails-scaler");
-            initScaler(thumbnailsScaler, thumbnailsScaler, {{- .ScaleInitialPercentage -}},
+            thumbnailsScaler = new Scaler(document.getElementById("thumbnails-scaler"),
+                document.getElementById("thumbnails-scaler"), {{- .ScaleInitialPercentage -}},
                 thumbnailScalerProps.baseScale, thumbnailScalerProps.imgSelector, thumbnailScalerProps.titleSelector);
         });
+
+        class Scaler {
+            constructor(scaler, container, scalerInitialPercentage, baseScale, imgSelector, fontSelector) {
+                this.scaler = scaler;
+                this.container = container;
+                this.scalerInitialPercentage = scalerInitialPercentage;
+                this.baseScale = baseScale;
+                this.imgSelector = imgSelector;
+                this.fontSelector = fontSelector;
+
+                this.scalerMinValue = Number(scaler.min);
+                this.scalerMaxValue = Number(scaler.max);
+                this.currentImgWidth = "";
+                this.currentFontSize = "";
+
+                this.scaler.value = this.evalInitialValue();
+                this.evalScaler();
+
+                this.scaler.addEventListener("input", () => this.updateScale());
+                this.scaler.addEventListener("auxclick", () => {
+                    this.scaler.value = this.evalInitialValue();
+                    this.updateScale();
+                });
+            }
+
+            evalInitialValue() {
+                return this.scalerMinValue + ((this.scalerMaxValue - this.scalerMinValue) * this.scalerInitialPercentage / 100.0);
+            }
+
+            evalScaler() {
+                this.currentImgWidth = (this.baseScale - this.scaler.value) + "vw";
+                this.currentFontSize = Math.round(14 - this.scaler.value / 10) + "px";
+            }
+
+            updateScale() {
+                this.evalScaler();
+                document.querySelectorAll(this.imgSelector).forEach(img => {
+                    img.style.maxWidth = this.currentImgWidth;
+                    img.style.minWidth = this.currentImgWidth;
+                });
+                document.querySelectorAll(this.fontSelector).forEach(title => title.style.fontSize = this.currentFontSize);
+            }
+        }
     </script>
 {{end}}
