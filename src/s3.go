@@ -3,11 +3,12 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/minio/minio-go/v7"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/minio/minio-go/v7"
 )
 
 func getFileFromBucket(minioClient *minio.Client, objKey, filePath string) error {
@@ -195,7 +196,7 @@ func fetchThumbnailsFrom(imgDir string, minioClient *minio.Client) []string {
 }
 
 func listMetaFiles(minioClient *minio.Client, dirs map[string]string, eventChan chan event) {
-	printDebug(fmt.Sprintf("Looking for meta files in bucket [%s] ...", config.S3.BucketName))
+	printDebug(fmt.Sprintf("Looking for metadata files in bucket [%s] ...", config.S3.BucketName))
 	tempFullProductLinksCache := map[string][]string{}
 	for dir, targetImg := range dirs {
 		// logger.Info().Msg("Dir: " + dir)
@@ -203,7 +204,7 @@ func listMetaFiles(minioClient *minio.Client, dirs map[string]string, eventChan 
 			tempFullProductLinksCache[dir] = []string{}
 			ctx, cancel := context.WithTimeout(context.Background(), config.PollingPeriod)
 			defer cancel()
-			printDebug("Looking for meta files in ", dir, " | config.geonamesFilename: ", config.GeonamesFilename)
+			printDebug("Looking for metadata files in ", dir, " | config.geonamesFilename: ", config.GeonamesFilename)
 			for obj := range minioClient.ListObjects(ctx, config.S3.BucketName, minio.ListObjectsOptions{Prefix: dir + "/", Recursive: true}) {
 				if obj.Err != nil {
 					continue

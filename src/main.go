@@ -12,7 +12,7 @@ import (
 	"github.com/minio/minio-go/v7/pkg/credentials"
 )
 
-var version = "3.0.0-dev"
+var version = "3.0.1-dev"
 
 const defaultTempDirName = "s3_image_server"
 
