@@ -1,4 +1,5 @@
 # Local files
+local
 build_compress_move.sh
 local_config.yml
 geonames*.json

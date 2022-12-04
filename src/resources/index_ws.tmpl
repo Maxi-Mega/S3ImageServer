@@ -95,7 +95,7 @@
                         if (formattedLink.indexOf("?") !== -1) {
                             formattedLink = formattedLink.substring(0, formattedLink.indexOf("?"));
                         }
-                        if (formattedLink.indexOf(fullProductExtension) !== -1) {
+                        if (fullProductExtension && formattedLink.indexOf(fullProductExtension) !== -1) {
                             formattedLink = formattedLink.substring(0, formattedLink.indexOf(fullProductExtension) + fullProductExtension.length);
                         }
                         a.innerText = formattedLink;
