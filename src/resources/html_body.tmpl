@@ -4,6 +4,7 @@
     <head>
         <title>{{.WindowTitle}}</title>
         <meta charset="utf-8">
+        <link rel="stylesheet" href="{{.BasePath}}/vendor/openlayers/ol.css">
         <style>
             :root {
                 --color-background-dark: #1c1c1c;
@@ -333,9 +334,11 @@
                 display: flex;
                 flex-flow: column nowrap;
                 align-self: baseline;
+                align-items: center;
             }
 
             #modal #content #content-details #details-top {
+                width: 100%;
                 display: flex;
                 flex-flow: row nowrap;
             }
@@ -366,8 +369,13 @@
                 max-width: 9%;
                 display: flex;
                 flex-flow: column;
-                justify-content: flex-end;
+                justify-content: space-between;
                 align-items: start;
+            }
+
+            #modal #content #thumbnails-control #carto-thumbnails-toggle {
+                visibility: hidden;
+                padding: 0 5px;
             }
 
             #modal #content #thumbnails-control #thumbnails-scaler {
@@ -395,6 +403,19 @@
                 flex-flow: column nowrap;
                 justify-content: flex-start;
                 align-items: center;
+            }
+
+            #modal #modal-carto {
+                width: 99.65%;
+                height: 70vh;
+                border: 2px solid var(--color-secondary-blue);
+            }
+
+            #modal #carto-coords {
+                display: none;
+                transform: translateY(-165%);
+                background-color: rgba(255, 255, 255, 0.75);
+                padding: 1px 5px;
             }
 
             #modal #modal-close {
@@ -503,11 +524,15 @@
                     <div id="details-top">
                         <div id="modal-links"></div>
                         <div id="thumbnails-control">
+                            <button id="carto-thumbnails-toggle"></button>
+                            <br />
                             <p id="thumbnails-count"></p>
                             <input id="thumbnails-scaler" type="range" min="10" max="22" step="1">
                         </div>
                     </div>
                     <div id="modal-thumbnails"></div>
+                    <div id="modal-carto"></div>
+                    <span id="carto-coords">Coordinates:</span>
                 </div>
             </div>
             <span id="modal-close" title="Click to close">&times;</span>
@@ -515,6 +540,9 @@
     </div>
     <script>
         let globalScaler, thumbnailsScaler;
+        let cartoMap = null;
+        let cartoLayer = null;
+        let cartoExtent = null;
 
         const thumbnailScalerProps = {
             baseScale: 30,
@@ -550,41 +578,6 @@
                 }
             }
         }
-
-        /*function evalScaler(baseScale, value) {
-            return [
-                (baseScale - value) + "vw",
-                Math.round(14 - value / 10) + "px"
-            ];
-        }
-
-        function updateScale(scaler, baseScale, imgSelector, titleSelector) {
-            [currentImgWidth, currentFontSize] = evalScaler(baseScale, scaler.value);
-            console.info("updateScale:", currentImgWidth);
-            document.querySelectorAll(imgSelector).forEach(img => {
-                img.style.maxWidth = currentImgWidth;
-                img.style.minWidth = currentImgWidth;
-            });
-            /!*const fontSize = Math.round(14 - scaler.value / 10) + "px";
-            currentFontSize = fontSize;*!/
-            document.querySelectorAll(titleSelector).forEach(title => title.style.fontSize = currentFontSize);
-        }
-
-        function initScaler(scaler, container, scalerInitialPercentage, baseScale, imgSelector, fontSelector) {
-            const scalerMinValue = Number(scaler.min);
-            const scalerMaxValue = Number(scaler.max);
-            const scalerInitialValue = scalerMinValue + ((scalerMaxValue - scalerMinValue) * scalerInitialPercentage / 100.0);
-            scaler.value = scalerInitialValue;
-            [currentImgWidth, currentFontSize] = evalScaler(baseScale, scaler.value);
-            // currentImgWidth = scaler.value + "vw";
-            console.info("initScaler:", currentImgWidth)
-            // currentFontSize = "10px";
-            scaler.addEventListener("input", () => updateScale(scaler, baseScale, imgSelector, fontSelector));
-            container.addEventListener("auxclick", () => {
-                scaler.value = scalerInitialValue;
-                updateScale(scaler, baseScale, imgSelector, fontSelector);
-            });
-        }*/
 
         document.addEventListener("DOMContentLoaded", () => {
 
@@ -646,6 +639,50 @@
             thumbnailsScaler = new Scaler(document.getElementById("thumbnails-scaler"),
                 document.getElementById("thumbnails-scaler"), {{- .ScaleInitialPercentage -}},
                 thumbnailScalerProps.baseScale, thumbnailScalerProps.imgSelector, thumbnailScalerProps.titleSelector);
+
+            const cartoThumbnailsToggle = document.getElementById("carto-thumbnails-toggle");
+            cartoThumbnailsToggle.addEventListener("click", () => {
+                const thumbnailsContainer = document.getElementById("modal-thumbnails");
+                const cartoContainer = document.getElementById("modal-carto");
+                if (cartoThumbnailsToggle.getAttribute("toggled") === "carto") {
+                    thumbnailsContainer.style.display = "flex";
+                    cartoContainer.style.display = "none";
+                    cartoThumbnailsToggle.innerText = "Map";
+                    cartoThumbnailsToggle.setAttribute("toggled", "thumbnails");
+                } else {
+                    cartoContainer.style.display = "block";
+                    thumbnailsContainer.style.display = "none";
+                    cartoThumbnailsToggle.innerText = "Thumbnails";
+                    cartoThumbnailsToggle.setAttribute("toggled", "carto");
+                    cartoMap.updateSize();
+                    cartoMap.getView().fit(cartoExtent);
+                }
+            });
+
+            // carto
+            ol.proj.useGeographic();
+            cartoMap = new ol.Map({
+                target: "modal-carto",
+                layers: [
+                    new ol.layer.Tile({
+                        source: new ol.source.OSM({
+                            url: "{{.TileServerURL}}"
+                        }),
+                    }),
+                ],
+                view: new ol.View({
+                    center: [0, 0],
+                    zoom: 10,
+                }),
+            });
+            const scaleline = new ol.control.ScaleLine();
+            cartoMap.addControl(scaleline);
+            const cartoCoords = document.getElementById("carto-coords");
+            cartoMap.on("pointermove", evt => {
+                const coords = evt.coordinate.map(coord => coord.toFixed(10)).join(" ");
+                cartoCoords.innerText = "Lon / Lat: " + coords;
+                cartoCoords.style.display = "block";
+            });
         });
 
         class Scaler {
@@ -691,4 +728,5 @@
             }
         }
     </script>
+    <script src="{{.BasePath}}/vendor/openlayers/ol.js"></script>
 {{end}}

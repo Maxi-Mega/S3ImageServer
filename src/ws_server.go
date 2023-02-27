@@ -2,11 +2,12 @@ package main
 
 import (
 	"fmt"
-	"github.com/gorilla/websocket"
-	"github.com/minio/minio-go/v7"
 	"net/http"
 	"strconv"
 	"time"
+
+	"github.com/gorilla/websocket"
+	"github.com/minio/minio-go/v7"
 )
 
 const (
@@ -160,6 +161,7 @@ func websocketHandler(w http.ResponseWriter, r *http.Request) {
 	executeTemplate(w, tmpl, templateData{
 		Version:                version,
 		BasePath:               config.BasePath,
+		TileServerURL:          config.TileServerURL,
 		WindowTitle:            config.WindowTitle,
 		ScaleInitialPercentage: config.ScaleInitialPercentage,
 		BucketName:             config.S3.BucketName,
@@ -233,6 +235,7 @@ func startWSServer(port uint16, eventChan chan event, minioClient *minio.Client)
 	http.HandleFunc("/infos/", func(w http.ResponseWriter, r *http.Request) {
 		infosHandler(w, r, minioClient)
 	})
+	http.HandleFunc("/vendor/", vendorHandler)
 	http.HandleFunc("/cache/", cacheHandler)
 	http.HandleFunc("/thumbnails/", thumbnailsHandler)
 	http.HandleFunc("/reload", func(w http.ResponseWriter, r *http.Request) {

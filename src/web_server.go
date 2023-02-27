@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/minio/minio-go/v7"
 	"html/template"
 	"io"
 	"net/http"
@@ -10,11 +9,14 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/minio/minio-go/v7"
 )
 
 type templateData struct {
 	Version                string
 	BasePath               string
+	TileServerURL          string
 	WindowTitle            string
 	ScaleInitialPercentage uint8
 	BucketName             string
@@ -131,17 +133,19 @@ func infosHandler(w http.ResponseWriter, r *http.Request, minioClient *minio.Cli
 	if !found {
 		geonames = Geonames{}
 	}
+	localization := img.AssociatedLocalization
 	features := img.AssociatedFeatures
 	if features == nil {
 		features = &Features{}
 	}
-	thumbnails := fetchThumbnailsFrom(imgDir, minioClient)
+	thumbnails := fetchThumbnailsFrom(imgDir, img.S3Key, minioClient)
 	prettier(w, "Image infos", ImageInfos{
-		Date:       strDate,
-		Links:      links,
-		Geonames:   geonames.format(),
-		Features:   *features,
-		Thumbnails: thumbnails,
+		Date:         strDate,
+		Links:        links,
+		Geonames:     geonames.format(),
+		Localization: localization,
+		Features:     *features,
+		Thumbnails:   thumbnails,
 	}, http.StatusOK)
 }
 
@@ -149,20 +153,22 @@ func cacheHandler(w http.ResponseWriter, r *http.Request) {
 	wanted := strings.TrimPrefix(r.URL.Path, "/cache/")
 	wanted = strings.TrimSuffix(wanted, "/")
 	parts := strings.Split(wanted, "/")
-	// URL structure: imgNameWithSlashes/filename
+	// URL structure: img@Name/filename
 	if len(parts) != 2 {
 		prettier(w, "Invalid URL", nil, http.StatusBadRequest)
 		return
 	}
 	imgName := parts[0]
 	imgNameWithSlashes := strings.ReplaceAll(imgName, "@", "/")
-	_, found := mainCache.findImageByKey(imgNameWithSlashes + "/" + config.PreviewFilename)
-	if !found {
-		prettier(w, "Image not found !", nil, http.StatusNotFound)
-		return
-	}
+	/*if config.PreviewFilename != "" {
+		_, found := mainCache.findImageByKey(imgNameWithSlashes + "/" + config.PreviewFilename)
+		if !found {
+			prettier(w, "Image not found !", nil, http.StatusNotFound)
+			return
+		}
+	}*/
 	filename := parts[1]
-	_, found = fullProductLinksCache[imgNameWithSlashes]
+	_, found := fullProductLinksCache[imgNameWithSlashes]
 	if !found {
 		prettier(w, "Image not found !", nil, http.StatusNotFound)
 		return
@@ -184,6 +190,23 @@ func thumbnailsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	serveFile(w, filepath.Join(config.thumbnailsCacheDir, wanted))
+}
+
+func vendorHandler(w http.ResponseWriter, r *http.Request) {
+	parts := strings.Split(strings.TrimPrefix(r.URL.Path, "/vendor/"), "/")
+	if len(parts) != 2 {
+		prettier(w, "Invalid URL", nil, http.StatusBadRequest)
+		return
+	}
+	lib, file := parts[0], parts[1]
+	fileContent, err := getVendoredFile(lib, file)
+	if err != nil {
+		prettier(w, fmt.Sprintf("Failed to get vendored file %s/%s: %v", lib, file, err), nil, http.StatusNotFound)
+		return
+	}
+	contentType := contentTypeFromFileName(file)
+	w.Header().Set("Content-Type", contentType)
+	w.Write(fileContent)
 }
 
 func serveFile(w http.ResponseWriter, filePath string) {

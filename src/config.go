@@ -4,7 +4,6 @@ import (
 	_ "embed"
 	"errors"
 	"fmt"
-	"gopkg.in/yaml.v3"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -12,6 +11,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"gopkg.in/yaml.v3"
 )
 
 const (
@@ -53,6 +54,8 @@ type Config struct {
 	ScaleInitialPercentage  uint8  `yaml:"scaleInitialPercentage"`
 	PreviewFilename         string `yaml:"previewFilename"`
 	GeonamesFilename        string `yaml:"geonamesFilename"`
+	LocalizationFilename    string `yaml:"localizationFilename"`
+	TileServerURL           string `yaml:"tileServerURL"`
 	FeaturesExtensionRegexp string `yaml:"featuresExtensionRegexp"`
 	featuresExtensionRegexp *regexp.Regexp
 	FeaturesPropertyName    string       `yaml:"featuresPropertyName"`

@@ -1,4 +1,4 @@
-# S3ImageServer [V3.0.2]
+# S3ImageServer [V3.1.0]
 
 ### Browse images from S3 bucket
 
@@ -67,15 +67,17 @@ webServerPort: 9999
 
 ## Build
 
+Execute the `update.sh` script to download the OpenLayers dependencies
+
 Go to the `src` directory and execute:
 
-### - For a dynamic excutable:
+### - For a dynamic binary:
 
 ```bash
 go build -o S3ImageViewer
 ```
 
-### - For a static excutable:
+### - For a static binary:
 
 ```bash
 go build -ldflags="-extldflags=-static" -tags osusergo,netgo -o S3ImageViewer

@@ -10,6 +10,8 @@ windowTitle: "S3 Image Viewer"
 scaleInitialPercentage: 50
 previewFilename: "preview.jpg"
 geonamesFilename: "geonames.json"
+localizationFilename: "localization.json"
+tileServerURL: "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
 featuresExtensionRegexp: "\\.features\\.json$"
 featuresPropertyName: "detection"
 fullProductExtension: "tif"

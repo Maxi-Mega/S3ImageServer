@@ -102,6 +102,40 @@ func getGeonamesFileFromBucket(minioClient *minio.Client, objKey string, objDate
 	return nil
 }
 
+func getLocalizationFileFromBucket(minioClient *minio.Client, objKey string, objDate time.Time, formattedFilename string, targetImg string) error {
+	filePath := filepath.Join(config.mainCacheDir, formattedFilename)
+	err := getFileFromBucket(minioClient, objKey, filePath)
+	if err != nil {
+		return err
+	}
+	if timer, found := timers[formattedFilename]; found {
+		timer.Stop()
+	}
+	localization, err := parseLocalization(filePath, objDate)
+	if err != nil {
+		return err
+	}
+	img, found := mainCache.findImageByPrefix(targetImg)
+	if found {
+		img.AssociatedLocalization = &localization
+	}
+	localizationCacheMutex.Lock()
+	localizationCache[formattedFilename] = localization
+	localizationCacheMutex.Unlock()
+	timersMutex.Lock()
+	timers[formattedFilename] = time.AfterFunc(config.RetentionPeriod, func() {
+		localizationCacheMutex.Lock()
+		delete(localizationCache, formattedFilename)
+		localizationCacheMutex.Unlock()
+		deleteFileFromCache(formattedFilename)
+		timersMutex.Lock()
+		delete(timers, formattedFilename)
+		timersMutex.Unlock()
+	})
+	timersMutex.Unlock()
+	return nil
+}
+
 func getFeaturesFileFromBucket(minioClient *minio.Client, objKey string, objDate time.Time, formattedFilename string, targetImg string, eventChan chan event) error {
 	filePath := filepath.Join(config.mainCacheDir, formattedFilename)
 	err := getFileFromBucket(minioClient, objKey, filePath)
@@ -168,7 +202,7 @@ func existsInCache(imgName string, obj minio.ObjectInfo) (exists, needsUpdate bo
 	return false, false
 }
 
-func fetchThumbnailsFrom(imgDir string, minioClient *minio.Client) []string {
+func fetchThumbnailsFrom(imgDir, imgKey string, minioClient *minio.Client) []string {
 	printInfo("Fetching thumbnails from ", imgDir, " ...")
 	ctx, cancel := context.WithTimeout(context.Background(), config.PollingPeriod)
 	defer cancel()
@@ -178,7 +212,7 @@ func fetchThumbnailsFrom(imgDir string, minioClient *minio.Client) []string {
 		Prefix:    s3ImgDir,
 		Recursive: true,
 	}) {
-		if !strings.HasSuffix(obj.Key, config.PreviewFilename) || obj.Key == s3ImgDir+config.PreviewFilename {
+		if !strings.HasSuffix(obj.Key, config.PreviewFilename) || obj.Key == imgKey {
 			continue
 		}
 		formattedFilename := formatFileName(obj.Key)
@@ -199,12 +233,11 @@ func listMetaFiles(minioClient *minio.Client, dirs map[string]string, eventChan 
 	printDebug(fmt.Sprintf("Looking for metadata files in bucket [%s] ...", config.S3.BucketName))
 	tempFullProductLinksCache := map[string][]string{}
 	for dir, targetImg := range dirs {
-		// logger.Info().Msg("Dir: " + dir)
 		func() { // usage of an anonymous function to call defer funcs at the end of each loop
 			tempFullProductLinksCache[dir] = []string{}
 			ctx, cancel := context.WithTimeout(context.Background(), config.PollingPeriod)
 			defer cancel()
-			printDebug("Looking for metadata files in ", dir, " | config.geonamesFilename: ", config.GeonamesFilename)
+			printDebug("Looking for metadata files in ", dir)
 			for obj := range minioClient.ListObjects(ctx, config.S3.BucketName, minio.ListObjectsOptions{Prefix: dir + "/", Recursive: true}) {
 				if obj.Err != nil {
 					continue
@@ -232,6 +265,25 @@ func listMetaFiles(minioClient *minio.Client, dirs map[string]string, eventChan 
 						continue
 					}
 					tempFullProductLinksCache[dir] = append(tempFullProductLinksCache[dir], getMainCacheFileLink(strings.ReplaceAll(dir, "/", "@"), config.GeonamesFilename))
+					continue
+				}
+
+				// localization
+				if len(config.LocalizationFilename) > 0 && strings.HasSuffix(obj.Key, "/"+config.LocalizationFilename) {
+					formattedFilename := formatFileName(dir + "/" + config.LocalizationFilename)
+					if localization, alreadyInCache := localizationCache[formattedFilename]; alreadyInCache {
+						if localization.lastUpdate.Before(obj.LastModified) {
+							err := getLocalizationFileFromBucket(minioClient, obj.Key, obj.LastModified, formattedFilename, targetImg)
+							if err != nil {
+								printError(err, false)
+							}
+						}
+						continue
+					}
+					err := getLocalizationFileFromBucket(minioClient, obj.Key, obj.LastModified, formattedFilename, targetImg)
+					if err != nil {
+						printError(err, false)
+					}
 					continue
 				}
 

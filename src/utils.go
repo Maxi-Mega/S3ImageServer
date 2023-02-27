@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/minio/minio-go/v7"
 	"io/fs"
 	"net/http"
 	"net/url"
@@ -13,6 +12,8 @@ import (
 	"reflect"
 	"strings"
 	"time"
+
+	"github.com/minio/minio-go/v7"
 )
 
 func getJustFileName(filePath string) string {
@@ -131,11 +132,12 @@ func getFullProductImageLink(minioClient *minio.Client, objKey string) string {
 }
 
 type ImageInfos struct {
-	Date       string   `json:"date"`
-	Links      []string `json:"links"`
-	Geonames   string   `json:"geonames"`
-	Features   Features `json:"features"`
-	Thumbnails []string `json:"thumbnails"`
+	Date         string        `json:"date"`
+	Links        []string      `json:"links"`
+	Geonames     string        `json:"geonames"`
+	Localization *Localization `json:"localization"`
+	Features     Features      `json:"features"`
+	Thumbnails   []string      `json:"thumbnails"`
 }
 
 func prettier(w http.ResponseWriter, message string, data interface{}, status int) {
@@ -203,6 +205,18 @@ func getFileContentType(file *os.File) (string, error) {
 	// Use the net/http package's handy DectectContentType function. Always returns a valid
 	// content-type by returning "application/octet-stream" if no others seemed to match.
 	return http.DetectContentType(buffer), nil
+}
+
+func contentTypeFromFileName(filename string) string {
+	f := strings.ToLower(filename)
+	switch {
+	case strings.HasSuffix(f, ".js"):
+		return "application/javascript"
+	case strings.HasSuffix(f, ".css"):
+		return "text/css"
+	default:
+		return ""
+	}
 }
 
 func clearDir(dir string) error {

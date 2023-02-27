@@ -12,7 +12,7 @@ import (
 	"github.com/minio/minio-go/v7/pkg/credentials"
 )
 
-var version = "3.0.2-dev"
+var version = "3.1.0-dev"
 
 const defaultTempDirName = "s3_image_server"
 
@@ -25,6 +25,8 @@ var timers map[string]*time.Timer
 var timersMutex sync.Mutex
 var geonamesCache map[string]Geonames
 var geonamesCacheMutex sync.Mutex
+var localizationCache map[string]Localization
+var localizationCacheMutex sync.Mutex
 var featuresCache map[string]Features
 var featuresCacheMutex sync.Mutex
 var fullProductLinksCache map[string][]string // TODO: rename ?
@@ -96,6 +98,7 @@ func main() {
 	eventChan := make(chan event, 1)
 	timers = map[string]*time.Timer{}
 	geonamesCache = map[string]Geonames{}
+	localizationCache = map[string]Localization{}
 	featuresCache = map[string]Features{}
 
 	go func() {

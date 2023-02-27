@@ -15,9 +15,10 @@ type S3Image struct {
 	FormattedKey string
 	// PathOnDisk   string
 
-	Type               *ImageType
-	AssociatedGeonames *Geonames
-	AssociatedFeatures *Features
+	Type                   *ImageType
+	AssociatedGeonames     *Geonames
+	AssociatedLocalization *Localization
+	AssociatedFeatures     *Features
 }
 
 func newS3ImageFromCache(imagePath string, fileInfo fs.FileInfo) S3Image {

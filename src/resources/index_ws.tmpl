@@ -57,6 +57,70 @@
         return container;
     }
 
+    function makeGeoFeature(l) {
+        return {
+            type: "FeatureCollection",
+            features: [
+                {
+                    'type': 'Feature',
+                    'geometry': {
+                        'type': 'Polygon',
+                        'coordinates': [
+                            [
+                                [l.corner["upper-left"].coordinates.lon, l.corner["upper-left"].coordinates.lat],
+                                [l.corner["upper-right"].coordinates.lon, l.corner["upper-right"].coordinates.lat],
+                                [l.corner["lower-right"].coordinates.lon, l.corner["lower-right"].coordinates.lat],
+                                [l.corner["lower-left"].coordinates.lon, l.corner["lower-left"].coordinates.lat],
+                                [l.corner["upper-left"].coordinates.lon, l.corner["upper-left"].coordinates.lat],
+                            ],
+                        ],
+                    },
+                }]
+        };
+    }
+
+    function displayCarto(carto, localization, display) {
+        if (cartoLayer) {
+            cartoMap.removeLayer(cartoLayer);
+        }
+        cartoLayer = new ol.layer.Vector({
+            source: new ol.source.Vector({
+                features: new ol.format.GeoJSON().readFeatures(makeGeoFeature(localization))
+            }),
+            style: new ol.style.Style({
+                stroke: new ol.style.Stroke({
+                    color: "blue",
+                    width: 3
+                })
+            })
+        });
+        cartoMap.addLayer(cartoLayer);
+        const ulLon = localization.corner["upper-left"].coordinates.lon
+        const urLon = localization.corner["upper-right"].coordinates.lon
+        const lrLon = localization.corner["lower-right"].coordinates.lon
+        const llLon = localization.corner["lower-left"].coordinates.lon
+        const ulLat = localization.corner["upper-left"].coordinates.lat
+        const urLat = localization.corner["upper-right"].coordinates.lat
+        const lrLat = localization.corner["lower-right"].coordinates.lat
+        const llLat = localization.corner["lower-left"].coordinates.lat
+
+        const centerLon = (ulLon + urLon + lrLon + llLon) / 4.0;
+        const centerLat = (ulLat + urLat + lrLat + llLat) / 4.0;
+        cartoMap.getView().setCenter([centerLon, centerLat]);
+
+        const marginPercent = 10;
+        const deltaX = Math.abs(ulLon - urLon) * marginPercent / 100;
+        const deltaY = Math.abs(ulLat - llLat) * marginPercent / 100;
+        cartoExtent = [Math.min(ulLon, llLon) - deltaX, Math.min(llLat, lrLat) - deltaY,
+            Math.max(urLon, lrLon) + deltaX, Math.max(ulLat, urLat) + deltaY]
+
+        if (display) {
+            carto.style.display = "block";
+            cartoMap.updateSize();
+            cartoMap.getView().fit(cartoExtent);
+        }
+    }
+
     function modalize(img) {
         while (modalLinks.hasChildNodes()) {
             modalLinks.removeChild(modalLinks.firstChild);
@@ -65,6 +129,7 @@
             thumbnails.removeChild(thumbnails.firstChild);
         }
         fetch("{{.BasePath}}/infos/" + img.alt).then(response => { // .replaceAll("@", "/")
+            document.getElementById("carto-coords").style.display = "none";
             response.json().then(jsonData => {
                 jsonData = jsonData.data;
                 document.getElementById("modal-img-date").innerText = jsonData["date"];
@@ -105,8 +170,11 @@
                 } else {
                     modalLinks.style.visibility = "hidden";
                 }
+                const cartoThumbnailsToggle = document.getElementById("carto-thumbnails-toggle");
                 const thumbnailsCount = document.getElementById("thumbnails-count");
                 const scaler = document.getElementById("thumbnails-scaler");
+                const carto = document.getElementById("modal-carto");
+                carto.style.display = "none";
                 if (jsonData["thumbnails"].length > 0) {
                     thumbnailsCount.style.display = "block";
                     thumbnailsCount.innerHTML = "Count:&nbsp;&nbsp;<strong>" + jsonData["thumbnails"].length + "</strong>";
@@ -116,14 +184,28 @@
                         thumbnails.appendChild(createThumbnail(thumbnail));
                     }
                     thumbnailsScaler.updateScale();
+
+                    if (jsonData["localization"]) {
+                        cartoThumbnailsToggle.style.visibility = "visible";
+                        cartoThumbnailsToggle.innerText = "Map";
+                        cartoThumbnailsToggle.setAttribute("toggled", "thumbnails");
+                        displayCarto(carto, jsonData["localization"], false);
+                    } else {
+                        cartoThumbnailsToggle.style.visibility = "hidden";
+                    }
                 } else {
                     thumbnailsCount.style.display = "none";
                     thumbnailsCount.innerHTML = "";
                     scaler.style.display = "none";
                     thumbnails.style.display = "none";
+
+                    cartoThumbnailsToggle.style.visibility = "hidden";
+                    if (jsonData["localization"]) {
+                        displayCarto(carto, jsonData["localization"], true);
+                    }
                 }
             }).catch(reason => {
-                console.warn("Failed to jsonify links:", reason);
+                console.warn("Failed to modalize image:", reason);
             });
         }).catch(reason => {
             console.warn("Failed to get image links:", reason);
