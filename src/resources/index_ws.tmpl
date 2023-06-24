@@ -446,7 +446,7 @@
                             break;
                         }
                         if (alreadyLoaded) {
-                            let imgToRemove = document.querySelector(`img[src*="{{.BasePath}}/image/${imgKey}"]`);
+                            let imgToRemove = document.querySelector('img[src*="{{.BasePath}}/image/'+imgKey+'"]');
                             container.removeChild(imgToRemove.parentElement.parentElement);
                             for (let i in images) {
                                 if (images[i].img_key === imgKey) {
@@ -463,7 +463,7 @@
                         break;
                     case "REMOVE":
                         if (alreadyLoaded) {
-                            container.removeChild(document.querySelector(`img[src*="{{.BasePath}}/image/${imgKey}"]`).parentElement.parentElement);
+                            container.removeChild(document.querySelector('img[src*="{{.BasePath}}/image/'+imgKey+'"]').parentElement.parentElement);
                             // delete images[imgKey];
                             for (let i in images) {
                                 if (images[i].img_key === imgKey) {
