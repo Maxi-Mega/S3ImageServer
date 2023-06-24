@@ -6,6 +6,9 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 type RawFeaturesFile struct { // TODO: remove useless fields
@@ -55,8 +58,20 @@ func parseFeatures(filePath string, objDate time.Time) (Features, error) {
 		Objects:    make(map[string]uint),
 		lastUpdate: objDate,
 	}
-	for _, rawFeature := range rawFeatures.Features {
-		detection := strings.Title(rawFeature.Properties[config.FeaturesPropertyName].(string))
+	for i, rawFeature := range rawFeatures.Features {
+		propertyName, ok := rawFeature.Properties[config.FeaturesPropertyName]
+		if !ok {
+			logger.Warn().Str("filepath", filePath).Msg(fmt.Sprintf("Feature n°%d has no property name", i+1))
+			continue
+		}
+		rawDetection, ok := propertyName.(string)
+		if !ok {
+			logger.Warn().Str("filepath", filePath).
+				Interface("name", rawFeature.Properties[config.FeaturesPropertyName]).
+				Msg("Feature property name is not a string")
+			continue
+		}
+		detection := cases.Title(language.English).String(rawDetection)
 		// TODO: inflection ?
 		if !strings.HasSuffix(detection, "s") {
 			detection += "s"
