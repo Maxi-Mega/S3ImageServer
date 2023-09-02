@@ -485,9 +485,9 @@
     <div class="container">
         {{- $basePath := .BasePath -}}
         {{range .Previews}}
-            <div class="img-container" img-type="{{.ImgType}}" img-name="{{.ImgKey}}">
+            <div class="img-container" img-type="{{.ImgType}}" img-name="{{.ImgKey}}" img-date="{{.ImgDate}}">
                 <div class="features-container">
-                    <img src="{{$basePath}}/image/{{.ImgKey}}" alt="{{.ImgKey}}" title="{{.ImgKey}}"/>
+                    <img src="{{$basePath}}/image/{{.ImgKey}}" alt="{{.ImgKey}}" title="{{.ImgType}}\n{{.ImgKey}}\n{{.ImgDate}}"/>
                     <pre class="image-features">
 {{- range $feature, $count := .Features.Objects}}
 &nbsp;{{$feature}}: {{$count}}&nbsp;

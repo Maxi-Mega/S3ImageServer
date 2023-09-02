@@ -231,10 +231,12 @@
         const newImg = document.createElement("img");
         newImg.src = "{{.BasePath}}/image/" + imgKey + "?time=" + Date.now();
         newImg.alt = imgKey;
+        newImg.title = img["img_type"] + "\n";
         const previewParts = imgKey.split("@");
         if (previewParts.length >= 2) {
-            newImg.title = previewParts[previewParts.length - 2];
+            newImg.title += previewParts[previewParts.length - 2] + "\n";
         }
+        newImg.title += img["img_date"];
         newImg.style.maxWidth = globalScaler.currentImgWidth;
         newImg.style.minWidth = globalScaler.currentImgWidth;
         newImg.addEventListener("click", () => modalize(newImg));
@@ -363,9 +365,11 @@
                 }*!/
             }, retentionPeriod * 1000);*/
             const previewParts = img.title.split("@");
+            img.title = img.parentElement.parentElement.getAttribute("img-type") + "\n";
             if (previewParts.length >= 2) {
-                img.title = previewParts[previewParts.length - 2];
+                img.title += previewParts[previewParts.length - 2] + "\n";
             }
+            img.title += img.parentElement.parentElement.getAttribute("img-date");
         });
 
         /*modal.addEventListener("click", ev => {

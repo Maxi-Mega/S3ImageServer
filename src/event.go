@@ -20,6 +20,7 @@ type EventObject struct {
 	ImgType  string   `json:"img_type"`
 	ImgKey   string   `json:"img_key"`
 	ImgName  string   `json:"img_name"`
+	ImgDate  string   `json:"img_date"`
 	Features Features `json:"features"`
 }
 
