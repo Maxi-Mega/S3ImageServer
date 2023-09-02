@@ -128,7 +128,8 @@
         while (thumbnails.hasChildNodes()) {
             thumbnails.removeChild(thumbnails.firstChild);
         }
-        fetch("{{.BasePath}}/infos/" + img.alt).then(response => { // .replaceAll("@", "/")
+        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        fetch("{{.BasePath}}/infos/" + img.alt + "?tz=" + timezone).then(response => { // .replaceAll("@", "/")
             document.getElementById("carto-coords").style.display = "none";
             response.json().then(jsonData => {
                 jsonData = jsonData.data;
