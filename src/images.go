@@ -81,7 +81,7 @@ func (images ImageCache) toEventObjects() []EventObject {
 	defer imagesCacheMutex.Unlock()
 
 	sort.Slice(images.images, func(i, j int) bool {
-		return images.images[i].LastModified.After(images.images[j].LastModified) // Usage of after to invert the sort order
+		return images.images[i].LastModified.After(images.images[j].LastModified) // Usage of After to invert the sort order
 	})
 
 	maxImagesCount := len(images.images)

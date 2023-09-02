@@ -343,7 +343,7 @@
             a.innerHTML = a.innerHTML.replace(/_/g, "_<wbr />");
         });
         document.querySelectorAll("img:not(#modal-img)").forEach(img => {
-            img.addEventListener("click", () => modalize(img));
+            img.parentElement.addEventListener("click", () => modalize(img));
             // /!\ WARNING: setTimeout() does not work with durations greater than 24 days /!\
             /*setTimeout(() => {
                 for (let i in images) {
