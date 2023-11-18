@@ -118,17 +118,7 @@ func infosHandler(w http.ResponseWriter, r *http.Request, minioClient *minio.Cli
 	img, found := mainCache.findImageByKey(strings.ReplaceAll(imgName, "@", "/"))
 	var strDate string
 	if found {
-		loc := time.Local // default as server location
-		_ = r.ParseForm()
-		if clientTZ := r.FormValue("tz"); clientTZ != "" {
-			clientLoc, err := time.LoadLocation(clientTZ)
-			if err != nil {
-				printWarn("Failed to parse client timezone %q: %v", clientTZ, err)
-			} else {
-				loc = clientLoc
-			}
-		}
-		strDate = img.LastModified.In(loc).Format("2006-01-02 15:04:05 MST")
+		strDate = img.LastModified.In(time.Local).Format("2006-01-02 15:04:05 MST")
 	} else {
 		strDate = "N/A"
 	}

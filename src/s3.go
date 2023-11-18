@@ -33,14 +33,14 @@ func getImageFromBucket(cache ImageCache, minioClient *minio.Client, objKey, for
 				ImgType: inferImageType(formattedKey).Name,
 				ImgKey:  formattedKey,
 				ImgName: getGeoname(formattedKey),
-				ImgDate: lastModTime.Format("2006-01-02 15:04:05"),
+				ImgDate: lastModTime.In(time.Local).Format("2006-01-02 15:04:05 MST"),
 			}, EventDate: lastModTime.String(), source: "getImageFromBucket"}
 		} else {
 			eventChan <- event{EventType: eventAdd, EventObj: EventObject{
 				ImgType: imgType,
 				ImgKey:  formattedKey,
 				ImgName: getGeoname(formattedKey),
-				ImgDate: lastModTime.Format("2006-01-02 15:04:05"),
+				ImgDate: lastModTime.In(time.Local).Format("2006-01-02 15:04:05 MST"),
 			}, EventDate: lastModTime.String(),
 				source: "getImageFromBucket"}
 		}
@@ -444,7 +444,7 @@ func listenToBucket(minioClient *minio.Client, eventChan chan event) {
 							ImgType: inferImageType(formattedName).Name,
 							ImgKey:  formattedName,
 							ImgName: getGeoname(formattedName),
-							ImgDate: objDate.Format("2006-01-02 15:04:05"),
+							ImgDate: objDate.In(time.Local).Format("2006-01-02 15:04:05 MST"),
 						}, EventDate: time.Now().String(),
 							source: "listenToBucket"}
 					} else if strings.HasPrefix(e.EventName, "s3:ObjectRemoved") {
