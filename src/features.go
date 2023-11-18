@@ -23,20 +23,10 @@ type RawFeaturesFile struct { // TODO: remove useless fields
 }
 
 type Features struct {
-	Objects    map[string]uint `json:"objects"`
+	Class      string         `json:"class"`
+	Count      int            `json:"featuresCount"`
+	Objects    map[string]int `json:"objects"`
 	lastUpdate time.Time
-}
-
-func (features Features) toJson() string {
-	if features.Objects == nil {
-		return "{}"
-	}
-	result, err := json.Marshal(features.Objects)
-	if err != nil {
-		printError(fmt.Errorf("failed to marshal features to json: %v", err), false)
-		return "{}"
-	}
-	return string(result)
 }
 
 func parseFeatures(filePath string, objDate time.Time) (Features, error) {
@@ -55,32 +45,42 @@ func parseFeatures(filePath string, objDate time.Time) (Features, error) {
 	}
 
 	features := Features{
-		Objects:    make(map[string]uint),
+		Objects:    make(map[string]int),
 		lastUpdate: objDate,
 	}
 	for i, rawFeature := range rawFeatures.Features {
-		propertyName, ok := rawFeature.Properties[config.FeaturesPropertyName]
+		category, ok := parseStrProp(config.FeaturesCategoryName, rawFeature.Properties, i, filePath)
 		if !ok {
-			logger.Warn().Str("filepath", filePath).Msg(fmt.Sprintf("Feature n°%d has no property name", i+1))
 			continue
 		}
-		rawDetection, ok := propertyName.(string)
+
+		class, ok := parseStrProp(config.FeaturesClassName, rawFeature.Properties, i, filePath)
 		if !ok {
-			logger.Warn().Str("filepath", filePath).
-				Interface("name", rawFeature.Properties[config.FeaturesPropertyName]).
-				Msg("Feature property name is not a string")
 			continue
 		}
-		detection := cases.Title(language.English).String(rawDetection)
-		// TODO: inflection ?
-		if !strings.HasSuffix(detection, "s") {
-			detection += "s"
-		}
-		if count, found := features.Objects[detection]; found {
-			features.Objects[detection] = count + 1
-		} else {
-			features.Objects[detection] = 1
-		}
+
+		features.Class = class
+		features.Count++
+		features.Objects[category]++
 	}
 	return features, nil
+}
+
+func parseStrProp(key string, props map[string]any, idx int, filepath string) (string, bool) {
+	propName, ok := props[key]
+	if !ok {
+		logger.Warn().Str("filepath", filepath).Msg(fmt.Sprintf("Feature n°%d has no %s", idx+1, key))
+		return "", false
+	}
+
+	rawProp, ok := propName.(string)
+	if !ok {
+		logger.Warn().Str("filepath", filepath).Interface("name", propName).
+			Msg(fmt.Sprintf("Feature n°%d %s is not a string", idx+1, key))
+		return "", false
+	}
+
+	value := cases.Title(language.English).String(rawProp)
+	value = strings.ReplaceAll(value, "_", " ")
+	return value, true
 }

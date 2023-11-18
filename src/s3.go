@@ -177,6 +177,8 @@ func getFeaturesFileFromBucket(minioClient *minio.Client, objKey string, objDate
 		EventType: eventFeatures,
 		EventObj: EventFeatures{
 			ImgKey:   targetImg,
+			Class:    features.Class,
+			Count:    features.Count,
 			Features: features.Objects,
 		},
 		EventDate: time.Now().String(),
@@ -334,8 +336,7 @@ func listMetaFiles(minioClient *minio.Client, dirs map[string]string, eventChan 
 func extractFilesFromBucket(minioClient *minio.Client, eventChan chan event) error {
 	pollMutex.Lock()
 	defer pollMutex.Unlock()
-	logger.Info().Msg(fmt.Sprintf("Looking for images in bucket [%s] ...", config.S3.BucketName))
-	// previewBaseDirs := []string{}
+	printDebug(fmt.Sprintf("Looking for images in bucket [%s] ...", config.S3.BucketName))
 	previewBaseDirs := map[string]string{}
 	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
 	defer cancel()

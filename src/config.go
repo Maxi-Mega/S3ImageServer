@@ -58,7 +58,8 @@ type Config struct {
 	TileServerURL           string `yaml:"tileServerURL"`
 	FeaturesExtensionRegexp string `yaml:"featuresExtensionRegexp"`
 	featuresExtensionRegexp *regexp.Regexp
-	FeaturesPropertyName    string       `yaml:"featuresPropertyName"`
+	FeaturesCategoryName    string       `yaml:"featuresCategoryName"`
+	FeaturesClassName       string       `yaml:"featuresClassName"`
 	FullProductExtension    string       `yaml:"fullProductExtension"`
 	FullProductProtocol     string       `yaml:"fullProductProtocol"`
 	FullProductRootUrl      string       `yaml:"fullProductRootUrl"`
@@ -269,7 +270,8 @@ func (config *Config) String() string {
 	result += "previewFilename: " + config.PreviewFilename + "\n"
 	result += "geonamesFilename: " + config.GeonamesFilename + "\n"
 	result += "featuresExtensionRegexp: " + config.FeaturesExtensionRegexp + "\n"
-	result += "featuresPropertyName: " + config.FeaturesPropertyName + "\n"
+	result += "featuresCategoryName: " + config.FeaturesCategoryName + "\n"
+	result += "featuresClassName: " + config.FeaturesClassName + "\n"
 	result += "fullProductExtension: " + config.FullProductExtension + "\n"
 	result += "fullProductProtocol: " + config.FullProductProtocol + "\n"
 	result += "fullProductRootUrl: " + config.FullProductRootUrl + "\n"

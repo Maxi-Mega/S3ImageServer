@@ -30,8 +30,10 @@ type EventGeonames struct {
 }
 
 type EventFeatures struct {
-	ImgKey   string          `json:"img_key"`
-	Features map[string]uint `json:"features"`
+	ImgKey   string         `json:"img_key"`
+	Class    string         `json:"class"`
+	Count    int            `json:"featuresCount"`
+	Features map[string]int `json:"features"`
 }
 
 type event struct {

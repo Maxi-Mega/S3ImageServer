@@ -134,11 +134,11 @@
             response.json().then(jsonData => {
                 jsonData = jsonData.data;
                 document.getElementById("modal-img-date").innerText = jsonData["date"];
-                const features = jsonData["features"]["objects"];
-                if (features && Object.keys(features).length > 0) {
-                    const firstFeature = Object.keys(features)[0];
-                    document.getElementById("features-type").innerText = firstFeature + ": ";
-                    document.getElementById("features-count").innerText = features[firstFeature];
+                const features = jsonData["features"];
+                const objects = features["objects"];
+                if (objects && Object.keys(objects).length > 0) {
+                    document.getElementById("features-type").innerText = features["class"] + ": ";
+                    document.getElementById("features-count").innerText = features["featuresCount"];
                 } else {
                     document.getElementById("features-type").innerText = "";
                     document.getElementById("features-count").innerText = "";

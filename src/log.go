@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/rs/zerolog"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/rs/zerolog"
 )
 
 const (
@@ -25,6 +26,7 @@ func init() {
 	for _, v := range []*string{&zerolog.LevelTraceValue, &zerolog.LevelDebugValue, &zerolog.LevelInfoValue, &zerolog.LevelWarnValue, &zerolog.LevelErrorValue, &zerolog.LevelFatalValue, &zerolog.LevelPanicValue} {
 		*v = strings.ToUpper(*v)
 	}
+	// This logger will only be used until initLogger() is called.
 	consoleWriter := zerolog.ConsoleWriter{
 		Out:        os.Stdout,
 		NoColor:    true,
