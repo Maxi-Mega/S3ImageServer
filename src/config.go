@@ -49,23 +49,25 @@ type ImageGroup struct {
 type Config struct {
 	S3 S3Config `yaml:"s3"`
 
-	BasePath                string `yaml:"basePath"`
-	WindowTitle             string `yaml:"windowTitle"`
-	ScaleInitialPercentage  uint8  `yaml:"scaleInitialPercentage"`
-	PreviewFilename         string `yaml:"previewFilename"`
-	GeonamesFilename        string `yaml:"geonamesFilename"`
-	LocalizationFilename    string `yaml:"localizationFilename"`
-	TileServerURL           string `yaml:"tileServerURL"`
-	FeaturesExtensionRegexp string `yaml:"featuresExtensionRegexp"`
-	featuresExtensionRegexp *regexp.Regexp
-	FeaturesCategoryName    string       `yaml:"featuresCategoryName"`
-	FeaturesClassName       string       `yaml:"featuresClassName"`
-	FullProductExtension    string       `yaml:"fullProductExtension"`
-	FullProductProtocol     string       `yaml:"fullProductProtocol"`
-	FullProductRootUrl      string       `yaml:"fullProductRootUrl"`
-	FullProductSignedUrl    bool         `yaml:"fullProductSignedUrl"`
-	ImageGroups             []ImageGroup `yaml:"imageGroups"`
-	imageTypes              []ImageType
+	BasePath                     string `yaml:"basePath"`
+	WindowTitle                  string `yaml:"windowTitle"`
+	ScaleInitialPercentage       uint8  `yaml:"scaleInitialPercentage"`
+	PreviewFilename              string `yaml:"previewFilename"`
+	GeonamesFilename             string `yaml:"geonamesFilename"`
+	LocalizationFilename         string `yaml:"localizationFilename"`
+	AdditionalProductFilesRegexp string `yaml:"additionalProductFilesRegexp"`
+	additionalProductFilesRegexp *regexp.Regexp
+	TileServerURL                string `yaml:"tileServerURL"`
+	FeaturesExtensionRegexp      string `yaml:"featuresExtensionRegexp"`
+	featuresExtensionRegexp      *regexp.Regexp
+	FeaturesCategoryName         string       `yaml:"featuresCategoryName"`
+	FeaturesClassName            string       `yaml:"featuresClassName"`
+	FullProductExtension         string       `yaml:"fullProductExtension"`
+	FullProductProtocol          string       `yaml:"fullProductProtocol"`
+	FullProductRootUrl           string       `yaml:"fullProductRootUrl"`
+	FullProductSignedUrl         bool         `yaml:"fullProductSignedUrl"`
+	ImageGroups                  []ImageGroup `yaml:"imageGroups"`
+	imageTypes                   []ImageType
 
 	LogLevel      string                 `yaml:"logLevel"`
 	ColorLogs     bool                   `yaml:"colorLogs"`
@@ -231,6 +233,13 @@ func loadConfigFromFile(filePath string) (Config, error) {
 	valid, errs := cfg.checkValidity()
 	if !valid {
 		return Config{}, errors.New(strings.Join(errs, "\n- "))
+	}
+
+	if cfg.AdditionalProductFilesRegexp != "" {
+		cfg.additionalProductFilesRegexp, err = regexp.Compile(cfg.AdditionalProductFilesRegexp)
+		if err != nil {
+			return Config{}, fmt.Errorf("invalid additional product files regexp: %w", err)
+		}
 	}
 
 	if cfg.FeaturesExtensionRegexp != "" {

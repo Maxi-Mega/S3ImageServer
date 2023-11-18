@@ -31,6 +31,8 @@ var featuresCache map[string]Features
 var featuresCacheMutex sync.Mutex
 var fullProductLinksCache map[string][]string // TODO: rename ?
 var fullProductLinksCacheMutex sync.Mutex
+var additionalProductFilesCache map[string]time.Time
+var additionalProductFilesCacheMutex sync.Mutex
 
 var pollMutex sync.Mutex
 
@@ -96,10 +98,11 @@ func main() {
 	thumbnailsCache = createCache(config.thumbnailsCacheDir)
 
 	eventChan := make(chan event, 1)
-	timers = map[string]*time.Timer{}
-	geonamesCache = map[string]Geonames{}
-	localizationCache = map[string]Localization{}
-	featuresCache = map[string]Features{}
+	timers = make(map[string]*time.Timer)
+	geonamesCache = make(map[string]Geonames)
+	localizationCache = make(map[string]Localization)
+	featuresCache = make(map[string]Features)
+	additionalProductFilesCache = make(map[string]time.Time)
 
 	go func() {
 		if config.PollingMode {

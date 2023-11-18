@@ -191,6 +191,8 @@ func reloadHandler(w http.ResponseWriter, _ *http.Request, eventChan chan event)
 	defer geonamesCacheMutex.Unlock()
 	fullProductLinksCacheMutex.Lock()
 	defer fullProductLinksCacheMutex.Unlock()
+	additionalProductFilesCacheMutex.Lock()
+	defer additionalProductFilesCacheMutex.Unlock()
 
 	// delete all caches in the filesystem
 	err := clearDir(config.BaseCacheDir)
@@ -208,8 +210,9 @@ func reloadHandler(w http.ResponseWriter, _ *http.Request, eventChan chan event)
 		timer.Stop()
 		delete(timers, timerKey)
 	}
-	geonamesCache = map[string]Geonames{}
-	fullProductLinksCache = map[string][]string{}
+	geonamesCache = make(map[string]Geonames)
+	fullProductLinksCache = make(map[string][]string)
+	additionalProductFilesCache = make(map[string]time.Time)
 
 	// send a reset signal to all the clients through websocket connections
 	eventChan <- event{

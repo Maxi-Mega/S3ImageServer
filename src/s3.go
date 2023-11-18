@@ -283,20 +283,13 @@ func listMetaFiles(minioClient *minio.Client, dirs map[string]string, eventChan 
 				// localization
 				if len(config.LocalizationFilename) > 0 && strings.HasSuffix(obj.Key, "/"+config.LocalizationFilename) {
 					formattedFilename := formatFileName(dir + "/" + config.LocalizationFilename)
-					if localization, alreadyInCache := localizationCache[formattedFilename]; alreadyInCache {
-						if localization.lastUpdate.Before(obj.LastModified) {
-							err := getLocalizationFileFromBucket(minioClient, obj.Key, obj.LastModified, formattedFilename, targetImg)
-							if err != nil {
-								printError(err, false)
-							}
+					if localizationCache[formattedFilename].lastUpdate.Before(obj.LastModified) {
+						err := getLocalizationFileFromBucket(minioClient, obj.Key, obj.LastModified, formattedFilename, targetImg)
+						if err != nil {
+							printError(err, false)
+							continue
 						}
-						continue
 					}
-					err := getLocalizationFileFromBucket(minioClient, obj.Key, obj.LastModified, formattedFilename, targetImg)
-					if err != nil {
-						printError(err, false)
-					}
-					continue
 				}
 
 				// features
@@ -304,21 +297,12 @@ func listMetaFiles(minioClient *minio.Client, dirs map[string]string, eventChan 
 					parts := strings.Split(obj.Key, "/")
 					filename := parts[len(parts)-1]
 					formattedFilename := formatFileName(dir + "/" + filename)
-					if ftr, alreadyInCache := featuresCache[formattedFilename]; alreadyInCache {
-						if ftr.lastUpdate.Before(obj.LastModified) {
-							err := getFeaturesFileFromBucket(minioClient, obj.Key, obj.LastModified, formattedFilename, targetImg, eventChan)
-							if err != nil {
-								printError(err, false)
-							}
+					if featuresCache[formattedFilename].lastUpdate.Before(obj.LastModified) {
+						printDebug("Found features file: ", obj.Key)
+						err := getFeaturesFileFromBucket(minioClient, obj.Key, obj.LastModified, formattedFilename, targetImg, eventChan)
+						if err != nil {
+							printError(err, false)
 						}
-						tempFullProductLinksCache[dir] = append(tempFullProductLinksCache[dir], getMainCacheFileLink(strings.ReplaceAll(dir, "/", "@"), filename))
-						continue
-					}
-					printDebug("Found features file: ", obj.Key)
-					err := getFeaturesFileFromBucket(minioClient, obj.Key, obj.LastModified, formattedFilename, targetImg, eventChan)
-					if err != nil {
-						printError(err, false)
-						continue
 					}
 					tempFullProductLinksCache[dir] = append(tempFullProductLinksCache[dir], getMainCacheFileLink(strings.ReplaceAll(dir, "/", "@"), filename))
 					continue
@@ -328,6 +312,23 @@ func listMetaFiles(minioClient *minio.Client, dirs map[string]string, eventChan 
 				if len(config.FullProductExtension) > 0 && strings.HasSuffix(obj.Key, config.FullProductExtension) {
 					tempFullProductLinksCache[dir] = append(tempFullProductLinksCache[dir], getFullProductImageLink(minioClient, obj.Key))
 					continue
+				}
+
+				if config.additionalProductFilesRegexp != nil && config.additionalProductFilesRegexp.MatchString(obj.Key) {
+					parts := strings.Split(obj.Key, "/")
+					filename := parts[len(parts)-1]
+					formattedFilename := formatFileName(dir + "/" + filename)
+
+					if additionalProductFilesCache[formattedFilename].Before(obj.LastModified) {
+						err := getFileFromBucket(minioClient, obj.Key, filepath.Join(config.mainCacheDir, formattedFilename))
+						if err != nil {
+							printError(err, false)
+							continue
+						}
+
+						additionalProductFilesCache[formattedFilename] = obj.LastModified
+						tempFullProductLinksCache[dir] = append(tempFullProductLinksCache[dir], getMainCacheFileLink(strings.ReplaceAll(dir, "/", "@"), filename))
+					}
 				}
 			}
 		}()
