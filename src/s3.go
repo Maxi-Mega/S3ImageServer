@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -15,6 +16,9 @@ func getFileFromBucket(minioClient *minio.Client, objKey, filePath string) error
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	if err := minioClient.FGetObject(ctx, config.S3.BucketName, objKey, filePath, minio.GetObjectOptions{}); err != nil {
+		if errors.Is(err, context.DeadlineExceeded) {
+			printWarn(fmt.Sprintf("Context deadline exceeded while getting object %q", objKey))
+		}
 		handleS3Error(fmt.Errorf("failed to fetch file from s3 bucket => exit: %v", err))
 		return fmt.Errorf("failed to fetch file from s3 bucket: %v", err)
 	}
