@@ -25,11 +25,14 @@ windowTitle: "S3 Image Viewer"
 scaleInitialPercentage: 50
 previewFilename: "preview.jpg"
 geonamesFilename: "geonames.json"
-featuresExtensionRegexp: "sample.*\\.json$"
-featuresPropertyName: "detection"
+localizationFilename: "localization.json"
+additionalProductFilesRegexp: "osmtags.json"
+tileServerURL: "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+featuresExtensionRegexp: "\\.features\\.json$"
+featuresCategoryName: "category"
+featuresClassName: "class"
 fullProductExtension: "tif"
 fullProductProtocol: "protocol://"
-fullProductRootUrl: "http://a.b.c.d:5000"
 fullProductSignedUrl: false
 imageGroups:
   - groupName: "Group 1"
