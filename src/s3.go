@@ -246,7 +246,7 @@ func listMetaFiles(minioClient *minio.Client, dirs map[string]string, eventChan 
 	tempFullProductLinksCache := map[string][]string{}
 	for dir, targetImg := range dirs {
 		func() { // usage of an anonymous function to call defer funcs at the end of each loop
-			tempFullProductLinksCache[dir] = []string{}
+			tempFullProductLinksCache[dir] = make([]string, 0)
 			ctx, cancel := context.WithTimeout(context.Background(), config.PollingPeriod)
 			defer cancel()
 			printDebug("Looking for metadata files in ", dir)
@@ -284,6 +284,8 @@ func listMetaFiles(minioClient *minio.Client, dirs map[string]string, eventChan 
 				if len(config.LocalizationFilename) > 0 && strings.HasSuffix(obj.Key, "/"+config.LocalizationFilename) {
 					formattedFilename := formatFileName(dir + "/" + config.LocalizationFilename)
 					if localizationCache[formattedFilename].lastUpdate.Before(obj.LastModified) {
+						printDebug("Found localization file: ", obj.Key)
+
 						err := getLocalizationFileFromBucket(minioClient, obj.Key, obj.LastModified, formattedFilename, targetImg)
 						if err != nil {
 							printError(err, false)
@@ -320,15 +322,17 @@ func listMetaFiles(minioClient *minio.Client, dirs map[string]string, eventChan 
 					formattedFilename := formatFileName(dir + "/" + filename)
 
 					if additionalProductFilesCache[formattedFilename].Before(obj.LastModified) {
+						printDebug("Found additional product file: ", obj.Key)
+
 						err := getFileFromBucket(minioClient, obj.Key, filepath.Join(config.mainCacheDir, formattedFilename))
 						if err != nil {
 							printError(err, false)
 							continue
 						}
-
-						additionalProductFilesCache[formattedFilename] = obj.LastModified
-						tempFullProductLinksCache[dir] = append(tempFullProductLinksCache[dir], getMainCacheFileLink(strings.ReplaceAll(dir, "/", "@"), filename))
 					}
+
+					additionalProductFilesCache[formattedFilename] = obj.LastModified
+					tempFullProductLinksCache[dir] = append(tempFullProductLinksCache[dir], getMainCacheFileLink(strings.ReplaceAll(dir, "/", "@"), filename))
 				}
 			}
 		}()
@@ -341,7 +345,7 @@ func listMetaFiles(minioClient *minio.Client, dirs map[string]string, eventChan 
 func extractFilesFromBucket(minioClient *minio.Client, eventChan chan event) error {
 	pollMutex.Lock()
 	defer pollMutex.Unlock()
-	printDebug(fmt.Sprintf("Looking for images in bucket [%s] ...", config.S3.BucketName))
+	printInfo(fmt.Sprintf("Looking for images in bucket [%s] ...", config.S3.BucketName))
 	previewBaseDirs := map[string]string{}
 	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
 	defer cancel()

@@ -497,7 +497,10 @@
                 <div class="features-container">
                     <img src="{{$basePath}}/image/{{.ImgKey}}" alt="{{.ImgKey}}" title="{{.ImgType}}\n{{.ImgKey}}\n{{.ImgDate}}"/>
                     <pre class="image-features">
-&nbsp;{{.Features.Class}}: {{.Features.Count}}&nbsp;<ul class="feature-categories">
+{{- if ne .Features.Class "" -}}
+&nbsp;{{.Features.Class}}: {{.Features.Count}}&nbsp;
+{{- end -}}
+<ul class="feature-categories">
 {{- range $feature, $count := .Features.Objects}}
 <li>&nbsp;{{$feature}}: {{$count}}&nbsp;</li>
 {{- end -}}

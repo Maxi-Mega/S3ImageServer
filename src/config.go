@@ -278,6 +278,8 @@ func (config *Config) String() string {
 	result += "scaleInitialPercentage: " + strconv.FormatUint(uint64(config.ScaleInitialPercentage), 10) + "\n"
 	result += "previewFilename: " + config.PreviewFilename + "\n"
 	result += "geonamesFilename: " + config.GeonamesFilename + "\n"
+	result += "additionalProductFilesRegexp: " + config.AdditionalProductFilesRegexp + "\n"
+	result += "tileServerURL: " + config.TileServerURL + "\n"
 	result += "featuresExtensionRegexp: " + config.FeaturesExtensionRegexp + "\n"
 	result += "featuresCategoryName: " + config.FeaturesCategoryName + "\n"
 	result += "featuresClassName: " + config.FeaturesClassName + "\n"

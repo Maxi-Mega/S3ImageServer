@@ -11,9 +11,11 @@ scaleInitialPercentage: 50
 previewFilename: "preview.jpg"
 geonamesFilename: "geonames.json"
 localizationFilename: "localization.json"
+additionalProductFilesRegexp: "osmtags.json"
 tileServerURL: "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
 featuresExtensionRegexp: "\\.features\\.json$"
-featuresPropertyName: "detection"
+featuresCategoryName: "category"
+featuresClassName: "class"
 fullProductExtension: "tif"
 fullProductProtocol: "protocol://"
 fullProductSignedUrl: false
