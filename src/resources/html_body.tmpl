@@ -175,7 +175,7 @@
             }
 
             .feature-categories {
-                font-size: medium;
+                font-size: 11px;
                 list-style-type: none;
                 margin-top: -5px;
                 padding: 0;
@@ -502,7 +502,7 @@
 {{- end -}}
 <ul class="feature-categories">
 {{- range $feature, $count := .Features.Objects}}
-<li>&nbsp;{{$feature}}: {{$count}}&nbsp;</li>
+<li>&nbsp;&nbsp;&nbsp;{{$feature}}: {{$count}}&nbsp;</li>
 {{- end -}}
 </ul></pre>
                 </div>

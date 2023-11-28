@@ -37,9 +37,9 @@ type EventFeatures struct {
 }
 
 type event struct {
-	EventType string      `json:"event_type"`
-	EventObj  interface{} `json:"event_obj"`
-	EventDate string      `json:"event_date"`
+	EventType string `json:"event_type"`
+	EventObj  any    `json:"event_obj"`
+	EventDate string `json:"event_date"`
 	source    string
 }
 

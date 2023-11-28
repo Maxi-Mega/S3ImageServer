@@ -240,8 +240,17 @@
         newImg.style.maxWidth = globalScaler.currentImgWidth;
         newImg.style.minWidth = globalScaler.currentImgWidth;
         newImg.addEventListener("click", () => modalize(newImg));
+        const obj = img["features"];
+        const features = obj["objects"];
         const newPre = document.createElement("pre");
         newPre.classList.add("image-features");
+        if (features != null && obj["featuresCount"] !== 0) {
+            let innerHTML = `&nbsp;${obj["class"]}: ${obj["featuresCount"]}&nbsp;\n`;
+            innerHTML += '<ul class="feature-categories">\n';
+            innerHTML += Object.keys(features).map(feature => `<li>&nbsp;&nbsp;&nbsp;${feature}: ${features[feature]}&nbsp;</li>`).join("\n");
+            innerHTML += '</ul>';
+            newPre.innerHTML = innerHTML;
+        }
         const newA = document.createElement("a");
         newA.classList.add("img-title");
         newA.href = "{{.BasePath}}/image/" + imgKey;
@@ -495,11 +504,16 @@
                     case "FEATURES":
                         if (parentDiv != null) {
                             const pre = parentDiv.querySelector("pre.image-features");
-                            const features = event["event_obj"]["features"];
-                            pre.innerHTML = "";
-                            for (const feature in features) {
-                                pre.innerHTML += `&nbsp;${feature}: ${features[feature]}&nbsp;\n`
+                            const obj = event["event_obj"];
+                            let innerHTML = "";
+                            if (obj["featuresCount"] !== 0) {
+                                innerHTML = `&nbsp;${obj["class"]}: ${obj["featuresCount"]}&nbsp;\n`;
+                                const features = obj["features"];
+                                innerHTML += '<ul class="feature-categories">\n';
+                                innerHTML += Object.keys(features).map(feature => `<li>&nbsp;&nbsp;&nbsp;${feature}: ${features[feature]}&nbsp;</li>`).join("\n");
+                                innerHTML += '</ul>';
                             }
+                            pre.innerHTML = innerHTML;
                         }
                         break;
                     case "RESET":
