@@ -1,0 +1,43 @@
+name: Release drafter
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - "*.*.*"
+
+jobs:
+  draft-release:
+    name: Draft release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Setup env
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+          echo "BINARY_FILENAME=S3ImageServer-${VERSION}" >> $GITHUB_ENV
+
+      - uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.22"
+
+      - name: Build
+        run: |
+          go build -ldflags="-X 'main.version=${{ env.VERSION }}' -extldflags=-static" -tags osusergo,netgo -o ${{ env.BINARY_FILENAME }} ./src
+          strip ${{ env.BINARY_FILENAME }}
+          xz ${{ env.BINARY_FILENAME }}
+
+      - name: Create release draft
+        uses: ncipollo/release-action@v1
+        with:
+          name: "Version ${{ env.VERSION }}"
+          draft: true
+          artifacts: "${{ env.BINARY_FILENAME }}.xz"
+          makeLatest: true
