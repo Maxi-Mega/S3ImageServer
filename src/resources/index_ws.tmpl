@@ -438,7 +438,7 @@
 
         if (window["WebSocket"]) {
             const wsProtocol = location.protocol === "https:" ? "wss:" : "ws:";
-            const conn = new WebSocket(wsProtocol + "//" + document.location.host + ("{{.BasePath}}".length > 0 ? "{{.BasePath}}/" : "") + "/ws");
+            const conn = new WebSocket(wsProtocol + "//" + document.location.host + "{{.BasePath}}/ws");
             conn.onerror = function (evt) {
                 console.error("WebSocket connection error:", evt);
             };
