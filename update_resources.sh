@@ -5,9 +5,6 @@ OPENLAYERS_JS_URL="https://cdn.jsdelivr.net/npm/ol@latest/dist/ol.js"
 OPENLAYERS_JS_MAP_URL="https://cdn.jsdelivr.net/npm/ol@latest/dist/ol.js.map"
 OPENLAYERS_CSS_URL="https://cdn.jsdelivr.net/npm/ol@latest/ol.css"
 
-echo "Updating Go dependencies ..."
-go get -u ./... && go mod tidy
-
 echo "Updating OpenLayers dependencies ..."
 mkdir -p "$OPENLAYERS_DIR"
 wget $OPENLAYERS_JS_URL -O "$OPENLAYERS_DIR/ol.js"
