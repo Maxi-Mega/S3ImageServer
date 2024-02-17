@@ -1,0 +1,45 @@
+run:
+  go: "1.22"
+  timeout: 5m
+  # Include test files or not.
+  tests: true
+linters:
+  enable-all: true
+  disable:
+    - cyclop
+    - exhaustivestruct
+    - exhaustruct
+    - funlen
+    - gochecknoinits
+    - gocognit
+    - goerr113
+    - gofumpt
+    - ireturn
+    - lll
+    - gomnd
+    - nlreturn
+    - nonamedreturns
+    - scopelint
+    - structcheck
+    - varnamelen
+    # Deprecated linters
+    - deadcode
+    - ifshort
+    - interfacer
+    - golint
+    - maligned
+    - nosnakecase
+    - varcheck
+linters-settings:
+  depguard:
+    rules:
+      main:
+        deny:
+          - pkg: "io/ioutil"
+            desc: "ioutil is deprecated starting with Go 1.16"
+  gci:
+    sections:
+      - standard
+      - prefix(skipy-api/src)
+      - default
+    custom-order: true
