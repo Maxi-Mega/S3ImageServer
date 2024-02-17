@@ -21,6 +21,7 @@ linters:
     - nonamedreturns
     - scopelint
     - structcheck
+    - tagliatelle
     - varnamelen
     # Deprecated linters
     - deadcode

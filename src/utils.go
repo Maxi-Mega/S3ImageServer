@@ -16,54 +16,10 @@ import (
 	"github.com/minio/minio-go/v7"
 )
 
-func getJustFileName(filePath string) string {
-	// return strings.TrimPrefix(strings.TrimPrefix(filePath, filepath.Dir(filePath)), "/")
-	return filepath.Base(filePath)
-}
-
-func getImageId(name string, date time.Time) string {
-	return name + "_" + date.Format(time.RFC3339)
-}
-
-/*func getImageType(imgName string) string {
-	imgName = strings.TrimPrefix(imgName, "PREVIEW@")
-	imgName = imgName[:strings.Index(imgName, "@")]
-	return imgName
-}*/
-
 // formatFileName replaces all the '/' by a '@'
 func formatFileName(imgPath string) string {
 	return strings.ReplaceAll(imgPath, "/", "@")
 }
-
-/*func getImagesList() []EventObject {
-	images := []EventObject{}
-
-imagesCacheLoop:
-	for imgToDo, dateToDo := range mainCache {
-		imgToDoObj := EventObject{
-			ImgType: getImageType(imgToDo),
-			ImgKey:  imgToDo,
-			ImgName: getGeoname(imgToDo),
-		}
-
-		for i, imgDone := range images {
-			if dateToDo.After(mainCache[imgDone.ImgKey]) {
-				images = append(images[:i], append([]EventObject{imgToDoObj}, images[i:]...)...) // insert new img at the right position
-				continue imagesCacheLoop
-			}
-		}
-
-		images = append(images, imgToDoObj) // insert new img at the end if it has the oldest date
-	}
-
-	if config.MaxImagesDisplayCount > 0 && len(images) > config.MaxImagesDisplayCount {
-		limit := len(images) - config.MaxImagesDisplayCount
-		return images[limit:] // keep only the n first images, n being the max images display count
-	}
-
-	return images
-}*/
 
 // func generateImagesCache() map[string]time.Time {
 func generateImagesCache(pathOnDisk string) ImageCache {
@@ -72,43 +28,35 @@ func generateImagesCache(pathOnDisk string) ImageCache {
 		if err != nil {
 			return err
 		}
+
 		if file.IsDir() {
 			return nil
 		}
+
 		info, err := file.Info()
 		if err != nil {
-			return err
+			return err //nolint:wrapcheck
 		}
+
 		if info.ModTime().Add(config.RetentionPeriod).Before(time.Now()) {
 			printDebug("Removing obsolete file from cache: ", imagePath)
-			return os.Remove(imagePath)
+
+			return os.Remove(imagePath) //nolint:wrapcheck
 		}
+
 		if strings.HasSuffix(imagePath, config.PreviewFilename) {
-			// images = append(images, getJustFileName(imagePath))
-			// cache[formatFileName(strings.TrimPrefix(strings.TrimPrefix(imagePath, config.mainCacheDir), string(os.PathSeparator)))] = info.ModTime()
 			cache.images = append(cache.images, newS3ImageFromCache(strings.TrimPrefix(imagePath, pathOnDisk), info))
 		}
+
 		return nil
 	})
+
 	if err != nil {
-		printError(fmt.Errorf("failed to generate images cache: %v", err), false)
+		printError(fmt.Errorf("failed to generate images cache: %w", err), false)
 	}
+
 	return cache
 }
-
-/*func getCorrespondingImage(objKey string) (image string, found bool) {
-	for img := range mainCache {
-		lastSlash := strings.LastIndex(img, "@")
-		if lastSlash < 0 {
-			continue
-		}
-		imgDir := img[:lastSlash]
-		if strings.HasPrefix(objKey, imgDir) {
-			return img, true
-		}
-	}
-	return "", false
-}*/
 
 func getMainCacheFileLink(img, file string) string {
 	return config.BasePath + "/cache/" + img + "/" + file
@@ -119,15 +67,19 @@ func getThumbnailsCacheFileLink(img string) string {
 }
 
 func getFullProductImageLink(minioClient *minio.Client, objKey string) string {
-	if config.FullProductSignedUrl {
-		signedUrl, err := minioClient.PresignedGetObject(context.Background(), config.S3.BucketName, objKey, 7*24*time.Hour, url.Values{})
+	if config.FullProductSignedURL {
+		signedURL, err := minioClient.PresignedGetObject(context.Background(), config.S3.BucketName, objKey, 7*24*time.Hour, url.Values{})
 		if err != nil {
-			printError(fmt.Errorf("failed to get a presigned object url: %v", err), false)
+			printError(fmt.Errorf("failed to get a presigned object url: %w", err), false)
+
 			return ""
 		}
-		newSignedUrl := strings.TrimPrefix(signedUrl.String(), signedUrl.Scheme+"://"+signedUrl.Host)
-		return config.FullProductProtocol + url.QueryEscape(config.FullProductRootUrl+newSignedUrl)
+
+		newSignedUrl := strings.TrimPrefix(signedURL.String(), signedURL.Scheme+"://"+signedURL.Host)
+
+		return config.FullProductProtocol + url.QueryEscape(config.FullProductRootURL+newSignedUrl)
 	}
+
 	return config.FullProductProtocol + config.S3.BucketName + "/" + objKey
 }
 
@@ -144,8 +96,10 @@ func prettier(w http.ResponseWriter, message string, data interface{}, status in
 	if data == nil {
 		data = struct{}{}
 	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
+
 	err := json.NewEncoder(w).Encode(struct {
 		Message string      `json:"message"`
 		Data    interface{} `json:"data"`
@@ -154,7 +108,7 @@ func prettier(w http.ResponseWriter, message string, data interface{}, status in
 		Data:    data,
 	})
 	if err != nil {
-		printError(fmt.Errorf("failed to marshal http response to json: %v", err), false)
+		printError(fmt.Errorf("failed to marshal http response to json: %w", err), false)
 	}
 }
 
@@ -175,8 +129,10 @@ func joinStructs(structs interface{}, sep string, displayFieldsName bool) (joine
 				fieldName := val.Type().Field(fi).Name
 				joined += fieldName + ": "
 			}
+
 			fieldValue := val.Field(fi).Interface()
 			joined += fmt.Sprint(fieldValue)
+
 			if fi < val.Type().NumField()-1 {
 				joined += "/"
 			}
@@ -186,6 +142,7 @@ func joinStructs(structs interface{}, sep string, displayFieldsName bool) (joine
 			joined += sep
 		}
 	}
+
 	return joined
 }
 
@@ -193,11 +150,12 @@ func getFileContentType(file *os.File) (string, error) {
 	if strings.HasSuffix(file.Name(), ".json") {
 		return "application/json", nil
 	}
+
 	buffer := make([]byte, 512)
 
 	_, err := file.Read(buffer)
 	if err != nil {
-		return "", fmt.Errorf("failed to read file: %v", err)
+		return "", fmt.Errorf("failed to read file: %w", err)
 	}
 	// Reseting the offset that has been shifted by the Read method
 	_, _ = file.Seek(0, 0)
@@ -209,6 +167,7 @@ func getFileContentType(file *os.File) (string, error) {
 
 func contentTypeFromFileName(filename string) string {
 	f := strings.ToLower(filename)
+
 	switch {
 	case strings.HasSuffix(f, ".js"):
 		return "application/javascript"
@@ -222,14 +181,16 @@ func contentTypeFromFileName(filename string) string {
 func clearDir(dir string) error {
 	files, err := filepath.Glob(filepath.Join(dir, "*"))
 	if err != nil {
-		return err
+		return err //nolint:wrapcheck
 	}
+
 	for _, file := range files {
 		err = os.RemoveAll(file)
 		if err != nil {
-			return err
+			return err //nolint:wrapcheck
 		}
 	}
+
 	return nil
 }
 
@@ -239,14 +200,9 @@ func createCache(cachePath string) ImageCache {
 		if err != nil {
 			exitWithError(err)
 		}
+
 		return ImageCache{pathOnDisk: cachePath}
 	}
-	return generateImagesCache(cachePath)
-}
 
-func minInt(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
+	return generateImagesCache(cachePath)
 }

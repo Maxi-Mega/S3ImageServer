@@ -35,19 +35,22 @@ func parseFeatures(filePath string, objDate time.Time) (Features, error) {
 		if os.IsNotExist(err) {
 			return Features{}, fmt.Errorf("file %q not found", filePath)
 		}
+
 		return Features{}, err
 	}
 
 	var rawFeatures RawFeaturesFile
+
 	err = json.Unmarshal(fileContent, &rawFeatures)
 	if err != nil {
-		return Features{}, fmt.Errorf("failed to unmarshal from json the content of the features file %q: %v", filePath, err)
+		return Features{}, fmt.Errorf("failed to unmarshal from json the content of the features file %q: %w", filePath, err)
 	}
 
 	features := Features{
 		Objects:    make(map[string]int),
 		lastUpdate: objDate,
 	}
+
 	for i, rawFeature := range rawFeatures.Features {
 		category, ok := parseStrProp(config.FeaturesCategoryName, rawFeature.Properties, i, filePath)
 		if !ok {
@@ -63,6 +66,7 @@ func parseFeatures(filePath string, objDate time.Time) (Features, error) {
 		features.Count++
 		features.Objects[category]++
 	}
+
 	return features, nil
 }
 
@@ -82,5 +86,6 @@ func parseStrProp(key string, props map[string]any, idx int, filepath string) (s
 
 	value := cases.Title(language.English).String(rawProp)
 	value = strings.ReplaceAll(value, "_", " ")
+
 	return value, true
 }

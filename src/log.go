@@ -18,11 +18,12 @@ const (
 
 const logTimeFormat = "2006-01-02T15:04:05.000Z"
 
-var logger zerolog.Logger
+var logger zerolog.Logger //nolint:gochecknoglobals
 
 func init() {
 	zerolog.TimestampFieldName = "date"
 	zerolog.TimeFieldFormat = logTimeFormat
+
 	for _, v := range []*string{&zerolog.LevelTraceValue, &zerolog.LevelDebugValue, &zerolog.LevelInfoValue, &zerolog.LevelWarnValue, &zerolog.LevelErrorValue, &zerolog.LevelFatalValue, &zerolog.LevelPanicValue} {
 		*v = strings.ToUpper(*v)
 	}
@@ -37,11 +38,12 @@ func init() {
 }
 
 func initLogger() {
-	if config.JsonLogFormat {
+	if config.JSONLogFormat {
 		ctx := zerolog.New(os.Stdout).With().Timestamp()
-		for key, value := range config.JsonLogFields {
+		for key, value := range config.JSONLogFields {
 			ctx = ctx.Interface(key, value)
 		}
+
 		logger = ctx.Logger()
 	} else {
 		consoleWriter := zerolog.ConsoleWriter{
@@ -71,8 +73,9 @@ func printWarn(a ...interface{}) {
 	}
 }
 
+// nolint: forbidigo
 func printError(err error, fatal bool) {
-	if config.JsonLogFormat {
+	if config.JSONLogFormat { //nolint:nestif
 		if fatal {
 			logger.Fatal().Msg(err.Error())
 		} else {
@@ -84,17 +87,11 @@ func printError(err error, fatal bool) {
 		} else {
 			fmt.Println("\n/!\\    Error    /!\\")
 		}
+
 		fmt.Println(time.Now().Format("2006-01-02 15:04:05"))
 		fmt.Println("- - - - - - - - - -")
 		fmt.Println(err)
 	}
-
-	/*bytes, err := json.Marshal(logObj)
-	if err != nil {
-		fmt.Println(logObj)
-		os.Exit(1)
-	}
-	fmt.Println(string(bytes))*/
 }
 
 func exitWithError(err error) {

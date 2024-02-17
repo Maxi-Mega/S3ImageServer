@@ -21,14 +21,15 @@ const (
 	pingPeriod = (pongWait * 9) / 10
 )
 
-var upgrader = websocket.Upgrader{
+var upgrader = websocket.Upgrader{ //nolint:gochecknoglobals
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
-	CheckOrigin: func(r *http.Request) bool {
+	CheckOrigin: func(*http.Request) bool {
 		return true
 	},
 }
 
+//nolint:gochecknoglobals
 var (
 	newline = []byte{'\n'}
 	space   = []byte{' '}
@@ -66,8 +67,8 @@ func (h *Hub) run(eventChan <-chan event) {
 				close(client.send)
 			}
 		case evt := <-eventChan:
-			// eventMsg := []byte(evt.String())
-			eventMsg := evt.Json()
+			eventMsg := evt.JSON()
+
 			for client := range h.clients {
 				select {
 				case client.send <- eventMsg:
@@ -95,8 +96,10 @@ func (c *Client) writer() {
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
 		ticker.Stop()
+
 		_ = c.conn.Close()
 	}()
+
 	for {
 		select {
 		case message, ok := <-c.send:
@@ -111,6 +114,7 @@ func (c *Client) writer() {
 			if err != nil {
 				return
 			}
+
 			_, _ = w.Write(message)
 
 			// Add queued chat messages to the current websocket message.
@@ -124,7 +128,11 @@ func (c *Client) writer() {
 				return
 			}
 		case <-ticker.C:
-			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
+			err := c.conn.SetWriteDeadline(time.Now().Add(writeWait))
+			if err != nil {
+				return
+			}
+
 			if err := c.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
 				return
 			}
@@ -136,9 +144,11 @@ func (c *Client) writer() {
 func serveWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		printError(fmt.Errorf("failed to upgrade WS connection: %v", err), false)
+		printError(fmt.Errorf("failed to upgrade WS connection: %w", err), false)
+
 		return
 	}
+
 	client := &Client{hub: hub, conn: conn, send: make(chan []byte, 256)}
 	client.hub.register <- client
 
@@ -150,14 +160,19 @@ func serveWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
 func websocketHandler(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/" {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
+
 		return
 	}
+
 	deleteCookies(w, r)
+
 	tmpl, err := getIndexWsTemplate()
 	if err != nil {
 		prettier(w, err.Error(), nil, http.StatusInternalServerError)
+
 		return
 	}
+
 	executeTemplate(w, tmpl, templateData{
 		Version:                version,
 		BasePath:               config.BasePath,
@@ -181,6 +196,7 @@ func websocketHandler(w http.ResponseWriter, r *http.Request) {
 
 func reloadHandler(w http.ResponseWriter, _ *http.Request, eventChan chan event) {
 	printInfo("Reload ...")
+
 	pollMutex.Lock()
 	defer pollMutex.Unlock()
 	imagesCacheMutex.Lock()
@@ -197,19 +213,22 @@ func reloadHandler(w http.ResponseWriter, _ *http.Request, eventChan chan event)
 	// delete all caches in the filesystem
 	err := clearDir(config.BaseCacheDir)
 	if err != nil {
-		printError(fmt.Errorf("failed to clear the cache on disk: %v", err), false)
+		printError(fmt.Errorf("failed to clear the cache on disk: %w", err), false)
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintln(w, "Failed to reload the cache, see the server's console for more details")
+
 		return
 	}
 
 	// clear all caches in ram
 	mainCache = ImageCache{pathOnDisk: config.mainCacheDir}
 	thumbnailsCache = ImageCache{pathOnDisk: config.thumbnailsCacheDir}
+
 	for timerKey, timer := range timers {
 		timer.Stop()
 		delete(timers, timerKey)
 	}
+
 	geonamesCache = make(map[string]Geonames)
 	fullProductLinksCache = make(map[string][]string)
 	additionalProductFilesCache = make(map[string]time.Time)
@@ -244,10 +263,11 @@ func startWSServer(port uint16, eventChan chan event, minioClient *minio.Client)
 	http.HandleFunc("/reload", func(w http.ResponseWriter, r *http.Request) {
 		reloadHandler(w, r, eventChan)
 	})
-	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/health", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusNoContent) // for ping
 	})
 
 	printInfo("Starting web socket server on port ", port, " ...")
+
 	return http.ListenAndServe(":"+strconv.FormatUint(uint64(port), 10), nil)
 }

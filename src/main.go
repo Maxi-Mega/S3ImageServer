@@ -16,30 +16,35 @@ var version = "3.3.2-dev"
 
 const defaultTempDirName = "s3_image_server"
 
-var config Config
+var config Config //nolint:gochecknoglobals
 
-var mainCache ImageCache
-var thumbnailsCache ImageCache
-var imagesCacheMutex sync.Mutex
-var timers map[string]*time.Timer
-var timersMutex sync.Mutex
-var geonamesCache map[string]Geonames
-var geonamesCacheMutex sync.Mutex
-var localizationCache map[string]Localization
-var localizationCacheMutex sync.Mutex
-var featuresCache map[string]Features
-var featuresCacheMutex sync.Mutex
-var fullProductLinksCache map[string][]string // TODO: rename ?
-var fullProductLinksCacheMutex sync.Mutex
-var additionalProductFilesCache map[string]time.Time
-var additionalProductFilesCacheMutex sync.Mutex
+//nolint:gochecknoglobals
+var (
+	mainCache                        ImageCache
+	thumbnailsCache                  ImageCache
+	imagesCacheMutex                 sync.Mutex
+	timers                           map[string]*time.Timer
+	timersMutex                      sync.Mutex
+	geonamesCache                    map[string]Geonames
+	geonamesCacheMutex               sync.Mutex
+	localizationCache                map[string]Localization
+	localizationCacheMutex           sync.Mutex
+	featuresCache                    map[string]Features
+	featuresCacheMutex               sync.Mutex
+	fullProductLinksCache            map[string][]string // TODO: rename ?
+	fullProductLinksCacheMutex       sync.Mutex
+	additionalProductFilesCache      map[string]time.Time
+	additionalProductFilesCacheMutex sync.Mutex
+)
 
-var pollMutex sync.Mutex
+var pollMutex sync.Mutex //nolint:gochecknoglobals
 
 func main() {
-	var configPath string
-	var printVersion bool
-	var err error
+	var (
+		configPath   string
+		printVersion bool
+		err          error
+	)
 
 	flag.Usage = func() {
 		fmt.Println("S3 Image Server help:")
@@ -55,6 +60,7 @@ func main() {
 		flag.Usage()
 		os.Exit(1)
 	}
+
 	if printVersion {
 		fmt.Println("\nS3 Image Server | Version " + version)
 		os.Exit(0)
@@ -66,7 +72,7 @@ func main() {
 
 	config, err = loadConfigFromFile(configPath)
 	if err != nil {
-		exitWithError(fmt.Errorf("invalid configuration: %v", err))
+		exitWithError(fmt.Errorf("invalid configuration: %w", err))
 	}
 
 	if config.LogLevel == levelDebug {
@@ -79,7 +85,7 @@ func main() {
 	}
 
 	minioClient, err := minio.New(config.S3.EndPoint, &minio.Options{
-		Creds:  credentials.NewStaticV4(config.S3.AccessId, config.S3.AccessSecret, ""),
+		Creds:  credentials.NewStaticV4(config.S3.AccessID, config.S3.AccessSecret, ""),
 		Secure: config.S3.UseSSL,
 	})
 	if err != nil {
@@ -88,7 +94,7 @@ func main() {
 
 	initLogger()
 
-	if config.HttpTrace {
+	if config.HTTPTrace {
 		minioClient.TraceOn(os.Stdout)
 	}
 
@@ -110,6 +116,7 @@ func main() {
 		} else {
 			listenToBucket(minioClient, eventChan)
 		}
+
 		err = startWSServer(config.WebServerPort, eventChan, minioClient)
 		if err != nil {
 			exitWithError(err)
@@ -118,7 +125,7 @@ func main() {
 
 	err = extractFilesFromBucket(minioClient, eventChan)
 	if err != nil {
-		exitWithError(fmt.Errorf("failed to extract files from bucket: %v", err))
+		exitWithError(fmt.Errorf("failed to extract files from bucket: %w", err))
 	}
 
 	printDebug("S3 images have been stored in ", config.mainCacheDir)

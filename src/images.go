@@ -23,6 +23,7 @@ type S3Image struct {
 
 func newS3ImageFromCache(imagePath string, fileInfo fs.FileInfo) S3Image {
 	s3Path := strings.TrimPrefix(strings.ReplaceAll(imagePath, "@", "/"), "/")
+
 	return S3Image{
 		S3Key:        s3Path,
 		LastModified: fileInfo.ModTime(),
@@ -41,7 +42,9 @@ func inferImageType(imageName string) *ImageType {
 			return &imgType
 		}
 	}
+
 	printDebug("Image type for image '" + imageName + "' not found !")
+
 	return nil
 }
 
@@ -58,25 +61,27 @@ type ImageCache struct {
 	images     []S3Image
 }
 
-func (images ImageCache) findImageByKey(key string) (image *S3Image, found bool) {
+func (images *ImageCache) findImageByKey(key string) (image *S3Image, found bool) {
 	for i, img := range images.images {
 		if img.S3Key == key {
 			return &images.images[i], true
 		}
 	}
+
 	return nil, false
 }
 
-func (images ImageCache) findImageByPrefix(prefix string) (image *S3Image, found bool) {
+func (images *ImageCache) findImageByPrefix(prefix string) (image *S3Image, found bool) {
 	for i, img := range images.images {
 		if strings.HasPrefix(img.S3Key, prefix) {
 			return &images.images[i], true
 		}
 	}
+
 	return nil, false
 }
 
-func (images ImageCache) toEventObjects() []EventObject {
+func (images *ImageCache) toEventObjects() []EventObject {
 	imagesCacheMutex.Lock()
 	defer imagesCacheMutex.Unlock()
 
@@ -90,19 +95,23 @@ func (images ImageCache) toEventObjects() []EventObject {
 	}
 
 	result := make([]EventObject, maxImagesCount)
+
 	for i, image := range images.images {
 		if i >= maxImagesCount {
 			// convert only the maxImagesCount first images,
 			// maxImagesCount being the minimum between the number of available images and the max images display count
 			break
 		}
+
 		features := Features{}
+
 		if image.AssociatedFeatures != nil {
 			/*for feature, count := range *image.AssociatedFeatures {
 				features += fmt.Sprintf("%s: %d ", feature, count)
 			}*/
 			features = *image.AssociatedFeatures
 		}
+
 		result[i] = EventObject{
 			ImgType:  image.Type.Name,
 			ImgKey:   image.FormattedKey,
@@ -112,10 +121,6 @@ func (images ImageCache) toEventObjects() []EventObject {
 		}
 	}
 
-	/*if config.MaxImagesDisplayCount > 0 && len(result) > config.MaxImagesDisplayCount {
-		return result[:config.MaxImagesDisplayCount] // keep only the n first images, n being the max images display count
-	}*/
-
 	return result
 }
 
@@ -123,7 +128,7 @@ func (images *ImageCache) addImage(objKey string, size int64, lastModified time.
 	imagesCacheMutex.Lock()
 	defer imagesCacheMutex.Unlock()
 
-	(*images).images = append((*images).images, S3Image{
+	images.images = append(images.images, S3Image{
 		S3Key:        objKey,
 		LastModified: lastModified,
 		Size:         size,
@@ -138,9 +143,10 @@ func (images *ImageCache) deleteImage(formattedName string) {
 	imagesCacheMutex.Lock()
 	defer imagesCacheMutex.Unlock()
 
-	for i, img := range (*images).images {
+	for i, img := range images.images {
 		if img.FormattedKey == formattedName {
-			(*images).images = append((*images).images[:i], (*images).images[i+1:]...)
+			images.images = append(images.images[:i], images.images[i+1:]...)
+
 			return
 		}
 	}

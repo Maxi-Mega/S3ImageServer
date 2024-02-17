@@ -29,10 +29,11 @@ type Geonames struct {
 }
 
 func (geonames *Geonames) String() string {
-	jsonBytes, err := json.MarshalIndent(geonames, "", "  ")
+	jsonBytes, err := json.MarshalIndent(geonames, "", "  ") //nolint:musttag
 	if err != nil {
 		return err.Error()
 	}
+
 	return string(jsonBytes)
 }
 
@@ -41,17 +42,21 @@ func (geonames *Geonames) format() string {
 
 	for _, country := range geonames.Objects {
 		final += country.Name + "\n"
-		if country.States != nil {
+
+		if country.States != nil { //nolint:nestif
 			for _, state := range country.States {
 				final += "  " + state.Name + "\n"
+
 				if state.Counties != nil {
 					for _, county := range state.Counties {
 						final += "    " + county.Name + "\n"
+
 						if county.Cities != nil {
 							for _, city := range county.Cities {
 								final += "      " + city.Name + "\n"
 							}
 						}
+
 						if county.Villages != nil {
 							for _, village := range county.Villages {
 								final += "        " + village.Name + "\n"
@@ -67,22 +72,27 @@ func (geonames *Geonames) format() string {
 }
 
 func (geonames *Geonames) getTopLevel() string {
-	if len(geonames.Objects) > 0 {
+	if len(geonames.Objects) > 0 { //nolint:nestif
 		name := geonames.Objects[0].Name
+
 		states := geonames.Objects[0].States
-		if states != nil && len(states) > 0 {
+		if len(states) > 0 {
 			name += " / " + states[0].Name
+
 			counties := states[0].Counties
-			if counties != nil && len(counties) > 0 {
+			if len(counties) > 0 {
 				name += " / " + counties[0].Name
+
 				cities := counties[0].Cities
-				if cities != nil && len(cities) > 0 {
+				if len(cities) > 0 {
 					name += " / " + cities[0].Name
 				} // TODO: villages ?
 			}
 		}
+
 		return name
 	}
+
 	return "no geoname found"
 }
 
@@ -112,14 +122,17 @@ func parseGeonames(filePath string, objDate time.Time) (Geonames, error) {
 		if os.IsNotExist(err) {
 			return Geonames{}, fmt.Errorf("file %q not found", filePath)
 		}
+
 		return Geonames{}, err
 	}
 
 	var geonames Geonames
+
 	err = json.Unmarshal(fileContent, &geonames.Objects)
 	if err != nil {
-		return Geonames{}, fmt.Errorf("failed to unmarshal from json the content of the geonames file %q: %v", filePath, err)
+		return Geonames{}, fmt.Errorf("failed to unmarshal from json the content of the geonames file %q: %w", filePath, err)
 	}
+
 	geonames.lastUpdate = objDate
 	geonames.sort()
 
@@ -127,11 +140,12 @@ func parseGeonames(filePath string, objDate time.Time) (Geonames, error) {
 }
 
 func getGeoname(imgName string) string {
-	// geonamesFilename := strings.TrimSuffix(imgName, config.PreviewFilename) + config.GeonamesFilename
 	geonamesFilename := imgName[:strings.LastIndex(imgName, "@")+1] + config.GeonamesFilename
+
 	geoname, found := geonamesCache[geonamesFilename]
 	if found && len(geoname.Objects) > 0 {
 		return geoname.getTopLevel()
 	}
+
 	return imgName
 }

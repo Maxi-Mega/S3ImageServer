@@ -30,14 +30,17 @@ func parseLocalization(filePath string, objDate time.Time) (Localization, error)
 		if os.IsNotExist(err) {
 			return Localization{}, fmt.Errorf("file %q not found", filePath)
 		}
-		return Localization{}, err
+
+		return Localization{}, err //nolint:wrapcheck
 	}
 
 	var localization Localization
+
 	err = json.Unmarshal(fileContent, &localization)
 	if err != nil {
-		return Localization{}, fmt.Errorf("failed to unmarshal from json the content of the localization file %q: %v", filePath, err)
+		return Localization{}, fmt.Errorf("failed to unmarshal from json the content of the localization file %q: %w", filePath, err)
 	}
+
 	localization.lastUpdate = objDate
 
 	return localization, nil

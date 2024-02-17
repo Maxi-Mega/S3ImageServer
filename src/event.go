@@ -43,14 +43,16 @@ type event struct {
 	source    string
 }
 
-func (evt event) Json() []byte {
+func (evt event) JSON() []byte {
 	data, err := json.Marshal(evt)
 	if err != nil {
-		printError(fmt.Errorf("failed to marshal event to json: %v", err), false)
+		printError(fmt.Errorf("failed to marshal event to json: %w", err), false)
 	}
+
 	return data
 }
 
+// nolint: forcetypeassert
 func (evt event) String() string {
 	switch evt.EventType {
 	case eventAdd:

@@ -9,5 +9,5 @@ import (
 var vendor embed.FS
 
 func getVendoredFile(lib, file string) ([]byte, error) {
-	return vendor.ReadFile(filepath.Join("resources/vendor/", lib, file))
+	return vendor.ReadFile(filepath.Join("resources/vendor/", lib, file)) //nolint:wrapcheck
 }
