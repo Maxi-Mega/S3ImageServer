@@ -17,6 +17,9 @@ jobs:
           go-version: "1.22"
           cache: true
 
+      - name: Set up resources
+        run: mkdir -p resources/vendor/openlayers
+
       - name: Lint
         uses: golangci/golangci-lint-action@v4
         with:
