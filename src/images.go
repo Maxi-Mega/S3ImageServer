@@ -116,7 +116,7 @@ func (images *ImageCache) toEventObjects() []EventObject {
 			ImgType:  image.Type.Name,
 			ImgKey:   image.FormattedKey,
 			ImgName:  getGeoname(image.FormattedKey),
-			ImgDate:  image.LastModified.In(time.Local).Format("2006-01-02 15:04:05 MST"),
+			ImgDate:  image.LastModified.In(time.Local).Format("2006-01-02 15:04:05 MST"), //nolint:gosmopolitan
 			Features: features,
 		}
 	}

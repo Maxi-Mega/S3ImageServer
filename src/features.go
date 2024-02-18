@@ -11,7 +11,7 @@ import (
 	"golang.org/x/text/language"
 )
 
-type RawFeaturesFile struct { // TODO: remove useless fields
+type RawFeaturesFile struct { //nolint:godox    // TODO: remove useless fields
 	Type     string `json:"type"`
 	Features []struct {
 		Type string `json:"type"`
@@ -36,7 +36,7 @@ func parseFeatures(filePath string, objDate time.Time) (Features, error) {
 			return Features{}, fmt.Errorf("file %q not found", filePath)
 		}
 
-		return Features{}, err
+		return Features{}, err //nolint:wrapcheck
 	}
 
 	var rawFeatures RawFeaturesFile

@@ -77,7 +77,7 @@ func (geonames *Geonames) getTopLevel() string {
 
 		states := geonames.Objects[0].States
 		if len(states) > 0 {
-			name += " / " + states[0].Name
+			name += " / " + states[0].Name //nolint: goconst
 
 			counties := states[0].Counties
 			if len(counties) > 0 {
@@ -86,7 +86,7 @@ func (geonames *Geonames) getTopLevel() string {
 				cities := counties[0].Cities
 				if len(cities) > 0 {
 					name += " / " + cities[0].Name
-				} // TODO: villages ?
+				} //nolint:godox    // TODO: villages ?
 			}
 		}
 
@@ -123,7 +123,7 @@ func parseGeonames(filePath string, objDate time.Time) (Geonames, error) {
 			return Geonames{}, fmt.Errorf("file %q not found", filePath)
 		}
 
-		return Geonames{}, err
+		return Geonames{}, err //nolint:wrapcheck
 	}
 
 	var geonames Geonames

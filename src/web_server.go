@@ -59,7 +59,7 @@ func infosHandler(w http.ResponseWriter, r *http.Request, minioClient *minio.Cli
 
 	img, found := mainCache.findImageByKey(strings.ReplaceAll(imgName, "@", "/"))
 	if found {
-		strDate = img.LastModified.In(time.Local).Format("2006-01-02 15:04:05 MST")
+		strDate = img.LastModified.In(time.Local).Format("2006-01-02 15:04:05 MST") //nolint:gosmopolitan
 	} else {
 		strDate = "N/A"
 	}

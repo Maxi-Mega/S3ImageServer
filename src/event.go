@@ -52,7 +52,7 @@ func (evt event) JSON() []byte {
 	return data
 }
 
-// nolint: forcetypeassert
+//nolint:gci, forcetypeassert
 func (evt event) String() string {
 	switch evt.EventType {
 	case eventAdd:

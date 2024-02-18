@@ -4,6 +4,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"sync"
 	"time"
@@ -31,7 +32,7 @@ var (
 	localizationCacheMutex           sync.Mutex
 	featuresCache                    map[string]Features
 	featuresCacheMutex               sync.Mutex
-	fullProductLinksCache            map[string][]string // TODO: rename ?
+	fullProductLinksCache            map[string][]string //nolint:godox    // TODO: rename ?
 	fullProductLinksCacheMutex       sync.Mutex
 	additionalProductFilesCache      map[string]time.Time
 	additionalProductFilesCacheMutex sync.Mutex
@@ -47,7 +48,7 @@ func main() {
 	)
 
 	flag.Usage = func() {
-		fmt.Println("S3 Image Server help:")
+		log.Println("S3 Image Server help:")
 		flag.PrintDefaults()
 		printDefaultConfig()
 	}
@@ -62,7 +63,7 @@ func main() {
 	}
 
 	if printVersion {
-		fmt.Println("\nS3 Image Server | Version " + version)
+		log.Println("\nS3 Image Server | Version " + version)
 		os.Exit(0)
 	}
 
@@ -76,12 +77,10 @@ func main() {
 	}
 
 	if config.LogLevel == levelDebug {
-		fmt.Println("\nStarting S3 Image Server " + version + " with configuration:")
-		fmt.Println(config.String())
-		fmt.Print("\n")
+		log.Println("\nStarting S3 Image Server " + version + " with configuration:")
+		log.Println(config.String() + "\n")
 	} else {
-		fmt.Println("\nStarting S3 Image Server " + version + " ...")
-		fmt.Print("\n")
+		log.Println("\nStarting S3 Image Server " + version + " ...\n")
 	}
 
 	minioClient, err := minio.New(config.S3.EndPoint, &minio.Options{

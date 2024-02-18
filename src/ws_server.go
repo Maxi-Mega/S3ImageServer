@@ -29,11 +29,7 @@ var upgrader = websocket.Upgrader{ //nolint:gochecknoglobals
 	},
 }
 
-//nolint:gochecknoglobals
-var (
-	newline = []byte{'\n'}
-	space   = []byte{' '}
-)
+var newline = []byte{'\n'} //nolint:gochecknoglobals
 
 // Hub maintains the set of active clients and broadcasts messages to the
 // clients.
@@ -255,7 +251,7 @@ func startWSServer(port uint16, eventChan chan event, minioClient *minio.Client)
 	http.HandleFunc("/image/", imageHandler)
 	http.HandleFunc("/images", imagesListHandler)
 	http.HandleFunc("/infos/", func(w http.ResponseWriter, r *http.Request) {
-		infosHandler(w, r, minioClient)
+		infosHandler(w, r, minioClient) //nolint:contextcheck
 	})
 	http.HandleFunc("/vendor/", vendorHandler)
 	http.HandleFunc("/cache/", cacheHandler)
@@ -269,5 +265,5 @@ func startWSServer(port uint16, eventChan chan event, minioClient *minio.Client)
 
 	printInfo("Starting web socket server on port ", port, " ...")
 
-	return http.ListenAndServe(":"+strconv.FormatUint(uint64(port), 10), nil)
+	return http.ListenAndServe(":"+strconv.FormatUint(uint64(port), 10), nil) //nolint:wrapcheck,gosec
 }

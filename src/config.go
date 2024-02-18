@@ -33,7 +33,7 @@ type S3Config struct {
 	UseSSL       bool   `yaml:"useSSL"`
 }
 
-// nolint: tagalign
+//nolint: tagalign,gci
 type ImageType struct {
 	Name          string `yaml:"name" json:"name"`
 	DisplayName   string `yaml:"displayName" json:"displayName"`
@@ -127,23 +127,23 @@ func (config *Config) loadDefaults() {
 			config.S3.UseSSL = defaultConfig.S3.UseSSL
 		}*/
 		case "WindowTitle":
-			if fieldValue.(string) == "" {
+			if fieldValue.(string) == "" { //nolint: forcetypeassert
 				config.WindowTitle = defaultConfig.WindowTitle
 			}
 		case "ScaleInitialPercentage":
-			if fieldValue.(uint8) < 1 || fieldValue.(uint8) > 100 {
+			if fieldValue.(uint8) < 1 || fieldValue.(uint8) > 100 { //nolint: forcetypeassert
 				config.ScaleInitialPercentage = 50
 			}
 		case "JsonLogFields":
-			if fieldValue.(map[string]interface{}) == nil {
+			if fieldValue.(map[string]interface{}) == nil { //nolint: forcetypeassert
 				config.JSONLogFields = defaultConfig.JSONLogFields
 			}
 		case "BaseCacheDir":
-			if fieldValue.(string) == "" {
+			if fieldValue.(string) == "" { //nolint: forcetypeassert
 				config.BaseCacheDir = defaultConfig.BaseCacheDir
 			}
 		case "WebServerPort":
-			if fieldValue.(uint16) == 0 {
+			if fieldValue.(uint16) == 0 { //nolint: forcetypeassert
 				config.WebServerPort = defaultConfig.WebServerPort
 			}
 		}
@@ -202,7 +202,7 @@ func (config *Config) checkValidity() (ok bool, errs []string) {
 
 	if len(config.LogLevel) == 0 {
 		errs = append(errs, "no log level provided")
-	} else {
+	} else { //nolint: gocritic
 		if config.LogLevel != levelDebug && config.LogLevel != levelInfo && config.LogLevel != levelWarn && config.LogLevel != levelError {
 			errs = append(errs, "invalid log level")
 		}
@@ -211,6 +211,7 @@ func (config *Config) checkValidity() (ok bool, errs []string) {
 	if config.RetentionPeriod == 0 {
 		errs = append(errs, "no retention period provided")
 	}
+
 	if config.PollingMode && config.PollingPeriod == 0 {
 		errs = append(errs, "no polling period provided")
 	}
@@ -224,14 +225,15 @@ func loadConfigFromFile(filePath string) (Config, error) {
 		if os.IsNotExist(err) {
 			return Config{}, fmt.Errorf("file %q not found", filePath)
 		}
-		return Config{}, err
+
+		return Config{}, err //nolint:wrapcheck
 	}
 
 	var cfg Config
 
 	err = yaml.Unmarshal(fileContent, &cfg)
 	if err != nil {
-		return Config{}, err
+		return Config{}, err //nolint:wrapcheck
 	}
 
 	cfg.LogLevel = strings.ToLower(cfg.LogLevel)
@@ -304,5 +306,5 @@ func (config *Config) String() string {
 }
 
 func printDefaultConfig() {
-	fmt.Print("\nconfig.yml example:\n-------------------\n", defaultConfigFile, "\n\n")
+	fmt.Print("\nconfig.yml example:\n-------------------\n", defaultConfigFile, "\n\n") //nolint: forbidigo
 }

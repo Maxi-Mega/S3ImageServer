@@ -35,7 +35,7 @@ func init() {
 	}
 	logger = zerolog.New(consoleWriter).With().Timestamp().Logger()
 	// {"date":"2021-12-16T15:07:48.264Z","level":"INFO","class_name":"activate_production","service_name":"s950","message":"Creating Zeebe client"}
-}
+} //nolint:wsl
 
 func initLogger() {
 	if config.JSONLogFormat {
@@ -73,7 +73,7 @@ func printWarn(a ...interface{}) {
 	}
 }
 
-// nolint: forbidigo
+//nolint:gci, forbidigo
 func printError(err error, fatal bool) {
 	if config.JSONLogFormat { //nolint:nestif
 		if fatal {
