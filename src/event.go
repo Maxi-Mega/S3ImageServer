@@ -52,7 +52,7 @@ func (evt event) JSON() []byte {
 	return data
 }
 
-//nolint:gci, forcetypeassert
+//nolint: forcetypeassert
 func (evt event) String() string {
 	switch evt.EventType {
 	case eventAdd:
@@ -67,6 +67,7 @@ func (evt event) String() string {
 		return evt.EventType + ":" + evt.EventObj.(EventFeatures).ImgKey
 	default:
 		printWarn("[event String()] Unknown event type: ", evt.EventType)
+
 		return "Unknown event type:" + evt.EventType
 	}
 }

@@ -11,7 +11,7 @@ import (
 	"golang.org/x/text/language"
 )
 
-type RawFeaturesFile struct { //nolint:godox    // TODO: remove useless fields
+type RawFeaturesFile struct { // TODO: remove useless fields
 	Type     string `json:"type"`
 	Features []struct {
 		Type string `json:"type"`

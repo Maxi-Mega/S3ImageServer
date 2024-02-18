@@ -521,7 +521,7 @@ func listenToBucket(minioClient *minio.Client, eventChan chan event) {
 
 							objDate = time.Now()
 						}
-						//nolint:godox    // TODO: list full product images
+						// TODO: list full product images
 						// imagesCacheMutex.Lock()
 						// mainCache[formattedName] = time.Now()
 						mainCache.addImage(objKey, obj.Size, objDate)

@@ -3,6 +3,7 @@ run:
   timeout: 5m
   # Include test files or not.
   tests: true
+
 linters:
   enable-all: true
   disable:
@@ -31,6 +32,7 @@ linters:
     - maligned
     - nosnakecase
     - varcheck
+
 linters-settings:
   depguard:
     rules:
@@ -38,9 +40,9 @@ linters-settings:
         deny:
           - pkg: "io/ioutil"
             desc: "ioutil is deprecated starting with Go 1.16"
+
   gci:
     sections:
       - standard
-      - prefix(skipy-api/src)
       - default
     custom-order: true

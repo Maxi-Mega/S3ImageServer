@@ -33,10 +33,9 @@ type S3Config struct {
 	UseSSL       bool   `yaml:"useSSL"`
 }
 
-//nolint: tagalign,gci
 type ImageType struct {
-	Name          string `yaml:"name" json:"name"`
-	DisplayName   string `yaml:"displayName" json:"displayName"`
+	Name          string `yaml:"name"		   json:"name"`
+	DisplayName   string `yaml:"displayName"   json:"displayName"`
 	ProductPrefix string `yaml:"productPrefix" json:"productPrefix"`
 	ProductRegexp string `yaml:"productRegexp" json:"productRegexp"`
 	productRegexp *regexp.Regexp
