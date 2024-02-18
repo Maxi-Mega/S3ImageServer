@@ -86,7 +86,7 @@ func (geonames *Geonames) getTopLevel() string {
 				cities := counties[0].Cities
 				if len(cities) > 0 {
 					name += " / " + cities[0].Name
-				} //nolint: godox // TODO: villages ?
+				}
 			}
 		}
 

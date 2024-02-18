@@ -11,13 +11,10 @@ import (
 	"golang.org/x/text/language"
 )
 
-type RawFeaturesFile struct { //nolint: godox // TODO: remove useless fields
+type RawFeaturesFile struct {
 	Type     string `json:"type"`
 	Features []struct {
-		Type string `json:"type"`
-		/*Properties struct {
-			Detection string `json:"detection"`
-		} `json:"properties"`*/
+		Type       string                 `json:"type"`
 		Properties map[string]interface{} `json:"properties"`
 	} `json:"features"`
 }
