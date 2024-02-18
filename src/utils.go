@@ -16,12 +16,11 @@ import (
 	"github.com/minio/minio-go/v7"
 )
 
-// formatFileName replaces all the '/' by a '@'
+// formatFileName replaces all the '/' by a '@'.
 func formatFileName(imgPath string) string {
 	return strings.ReplaceAll(imgPath, "/", "@")
 }
 
-// func generateImagesCache() map[string]time.Time {
 func generateImagesCache(pathOnDisk string) ImageCache {
 	cache := ImageCache{pathOnDisk: pathOnDisk}
 	err := filepath.WalkDir(pathOnDisk, func(imagePath string, file fs.DirEntry, err error) error {

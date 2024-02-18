@@ -23,7 +23,7 @@ const (
 //go:embed resources/example_config.yml
 var defaultConfigFile string
 
-// S3Config is the directly related part of the global config
+// S3Config is the directly related part of the global config.
 type S3Config struct {
 	EndPoint   string `yaml:"endPoint"`
 	BucketName string `yaml:"bucketName"`
@@ -34,10 +34,10 @@ type S3Config struct {
 }
 
 type ImageType struct {
-	Name          string `yaml:"name"		   json:"name"`
-	DisplayName   string `yaml:"displayName"   json:"displayName"`
-	ProductPrefix string `yaml:"productPrefix" json:"productPrefix"`
-	ProductRegexp string `yaml:"productRegexp" json:"productRegexp"`
+	Name          string `json:"name"		   yaml:"name"`
+	DisplayName   string `json:"displayName"   yaml:"displayName"`
+	ProductPrefix string `json:"productPrefix" yaml:"productPrefix"`
+	ProductRegexp string `json:"productRegexp" yaml:"productRegexp"`
 	productRegexp *regexp.Regexp
 }
 
