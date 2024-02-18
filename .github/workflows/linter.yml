@@ -18,7 +18,7 @@ jobs:
           cache: true
 
       - name: Set up resources
-        run: mkdir -p resources/vendor/openlayers
+        run: mkdir -p src/resources/vendor/openlayers
 
       - name: Lint
         uses: golangci/golangci-lint-action@v4
