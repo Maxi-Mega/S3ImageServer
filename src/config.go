@@ -34,7 +34,7 @@ type S3Config struct {
 }
 
 type ImageType struct {
-	Name          string `json:"name"		   yaml:"name"`
+	Name          string `json:"name"          yaml:"name"`
 	DisplayName   string `json:"displayName"   yaml:"displayName"`
 	ProductPrefix string `json:"productPrefix" yaml:"productPrefix"`
 	ProductRegexp string `json:"productRegexp" yaml:"productRegexp"`

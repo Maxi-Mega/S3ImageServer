@@ -521,11 +521,8 @@ func listenToBucket(minioClient *minio.Client, eventChan chan event) {
 
 							objDate = time.Now()
 						}
-						// TODO: list full product images //nolint: godox
-						// imagesCacheMutex.Lock()
-						// mainCache[formattedName] = time.Now()
+
 						mainCache.addImage(objKey, obj.Size, objDate)
-						// imagesCacheMutex.Unlock()
 						eventChan <- event{EventType: eventAdd, EventObj: EventObject{
 							ImgType: inferImageType(formattedName).Name,
 							ImgKey:  formattedName,
@@ -536,10 +533,7 @@ func listenToBucket(minioClient *minio.Client, eventChan chan event) {
 					} else if strings.HasPrefix(e.EventName, "s3:ObjectRemoved") {
 						printDebug("[Removed]: ", objKey)
 						deleteFileFromCache(formattedName)
-						// imagesCacheMutex.Lock()
-						// delete(mainCache, formattedName)
 						mainCache.deleteImage(formattedName)
-						// imagesCacheMutex.Unlock()
 						eventChan <- event{EventType: eventRemove, EventObj: EventObject{ImgKey: formattedName}, source: "listenToBucket"}
 					}
 				}

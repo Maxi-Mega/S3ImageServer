@@ -32,7 +32,7 @@ var (
 	localizationCacheMutex           sync.Mutex
 	featuresCache                    map[string]Features
 	featuresCacheMutex               sync.Mutex
-	fullProductLinksCache            map[string][]string // TODO: rename ? //nolint: godox
+	fullProductLinksCache            map[string][]string //nolint: godox // TODO: rename ?
 	fullProductLinksCacheMutex       sync.Mutex
 	additionalProductFilesCache      map[string]time.Time
 	additionalProductFilesCacheMutex sync.Mutex

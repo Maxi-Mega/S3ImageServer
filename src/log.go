@@ -73,7 +73,7 @@ func printWarn(a ...interface{}) {
 	}
 }
 
-//nolint: forbidigo
+//nolint: forbidigo, gci
 func printError(err error, fatal bool) {
 	if config.JSONLogFormat { //nolint:nestif
 		if fatal {
